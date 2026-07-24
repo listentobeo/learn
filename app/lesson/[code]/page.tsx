@@ -1,0 +1,55 @@
+import { ArrowLeft, PlayCircle } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { AppShell } from "@/components/app-shell";
+import { AssignmentUpload } from "@/components/assignment-upload";
+import { Quiz } from "@/components/quiz";
+import { demoProfile, demoQuestions, lessonsFor } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase/server";
+import type { Lesson, Profile, QuizQuestion } from "@/lib/types";
+import { isLessonUnlocked } from "@/lib/utils";
+import { getYouTubeVideo } from "@/lib/youtube";
+
+async function lessonData(code: string): Promise<{ profile: Profile; lesson: Lesson; questions: QuizQuestion[] } | null> {
+  const supabase = await createClient();
+  if (!supabase) {
+    const lesson = lessonsFor(demoProfile.track).find((item) => item.lesson_code === code);
+    return lesson ? { profile: demoProfile, lesson, questions: demoQuestions(code) } : null;
+  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const [{ data: profile }, { data: lesson }, { data: questions }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("lessons").select("*").eq("lesson_code", code).single(),
+    supabase.from("quiz_questions").select("id,lesson_code,question_text,option_a,option_b,option_c,option_d").eq("lesson_code", code).order("id"),
+  ]);
+  if (!profile || !lesson) return null;
+  return { profile: profile as Profile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[] };
+}
+
+export default async function LessonPage({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = await params;
+  const data = await lessonData(code);
+  if (!data) notFound();
+  if (!isLessonUnlocked(data.lesson, data.profile)) notFound();
+  const { profile, lesson, questions } = data;
+  const video = await getYouTubeVideo(lesson.youtube_video_id);
+  return (
+    <AppShell name={profile.name} track={profile.track}>
+      <div className="lesson-shell">
+        <Link className="back-link" href="/dashboard"><ArrowLeft size={15} /> Back to lessons</Link>
+        <div className="lesson-heading"><div><span className="lesson-code">{lesson.lesson_code} · Week {lesson.week_number}</span><h1>{lesson.title}</h1></div><span className="pill">Lesson available</span></div>
+        <div className="video">
+          {video ? <iframe src={`https://www.youtube-nocookie.com/embed/${video.id}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <div className="video-placeholder"><div><PlayCircle size={44} /><strong>Lesson video</strong><br /><span>Connect a YouTube video ID in Supabase to play this lesson.</span></div></div>}
+        </div>
+        <div className="lesson-grid">
+          <div>
+            <section className="surface"><h2>Lesson notes</h2><div className="notes">{lesson.notes}</div></section>
+            <Quiz questions={questions.length ? questions : demoQuestions(code)} lessonCode={code} />
+          </div>
+          <AssignmentUpload lessonCode={code} instructions={lesson.assignment_instructions} />
+        </div>
+      </div>
+    </AppShell>
+  );
+}
