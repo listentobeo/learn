@@ -20,6 +20,7 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
    For an existing project created before secure profile settings, also run `supabase/migrations/20260724_secure_profile_updates.sql`.
    For an existing project created before assignment feedback and welcome videos, also run `supabase/migrations/20260724_assignment_feedback_and_welcome_videos.sql`.
    For an existing project created before live inline checkout, also run `supabase/migrations/20260724_paystack_inline_and_subscriptions.sql`.
+   To allow students to own and switch between multiple tracks, also run `supabase/migrations/20260724_multi_track_enrollments.sql`.
 2. Run `supabase/seed_original_curriculum.sql` to load the 32 original lessons and all 96 ordered quiz questions.
 3. Add the environment variables from `.env.example`.
 4. In Paystack, set the webhook to `https://learn.beoarts.com/api/paystack/webhook`.

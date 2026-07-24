@@ -93,6 +93,15 @@ create table public.payments (
   created_at timestamptz not null default now()
 );
 
+create table public.enrollments (
+  student_id uuid not null references public.profiles(id) on delete cascade,
+  track public.learning_track not null,
+  enrollment_date timestamptz not null default now(),
+  payment_status public.payment_state not null default 'active',
+  created_at timestamptz not null default now(),
+  primary key (student_id, track)
+);
+
 create table public.paystack_plans (
   track public.learning_track not null,
   currency text not null check (currency in ('NGN','USD')),
@@ -146,6 +155,7 @@ alter table public.quiz_submissions enable row level security;
 alter table public.assignments enable row level security;
 alter table public.track_welcome_videos enable row level security;
 alter table public.payments enable row level security;
+alter table public.enrollments enable row level security;
 alter table public.paystack_plans enable row level security;
 alter table public.subscriptions enable row level security;
 
@@ -175,10 +185,11 @@ grant execute on function public.update_own_profile_name(text) to authenticated;
 create policy "Students read own profile" on public.profiles for select using (id = auth.uid() or public.is_admin());
 create policy "Admins update profiles" on public.profiles for update using (public.is_admin());
 create policy "Paid students read their track lessons" on public.lessons for select using (
-  exists(select 1 from public.profiles p where p.id = auth.uid() and p.payment_status = 'active' and (p.track = lessons.track or p.role = 'admin'))
+  exists(select 1 from public.enrollments e where e.student_id = auth.uid() and e.payment_status = 'active' and e.track = lessons.track)
+  or public.is_admin()
 );
 create policy "Paid students read quiz prompts" on public.quiz_questions for select using (
-  exists(select 1 from public.profiles p join public.lessons l on l.track = p.track where p.id = auth.uid() and p.payment_status = 'active' and l.lesson_code = quiz_questions.lesson_code)
+  exists(select 1 from public.enrollments e join public.lessons l on l.track = e.track where e.student_id = auth.uid() and e.payment_status = 'active' and l.lesson_code = quiz_questions.lesson_code)
   or public.is_admin()
 );
 create policy "Students read own quiz results" on public.quiz_submissions for select using (student_id = auth.uid() or public.is_admin());
@@ -187,11 +198,14 @@ create policy "Students read own assignments" on public.assignments for select u
 create policy "Students submit own assignments" on public.assignments for insert with check (student_id = auth.uid());
 create policy "Admins review assignments" on public.assignments for update using (public.is_admin());
 create policy "Students read their welcome video" on public.track_welcome_videos for select using (
-  exists(select 1 from public.profiles p where p.id = auth.uid() and p.payment_status = 'active' and (p.track = track_welcome_videos.track or p.role = 'admin'))
+  exists(select 1 from public.enrollments e where e.student_id = auth.uid() and e.payment_status = 'active' and e.track = track_welcome_videos.track)
+  or public.is_admin()
 );
 create policy "Admins insert welcome videos" on public.track_welcome_videos for insert with check (public.is_admin());
 create policy "Admins update welcome videos" on public.track_welcome_videos for update using (public.is_admin()) with check (public.is_admin());
 create policy "Students read own payments" on public.payments for select using (student_id = auth.uid() or public.is_admin());
+create policy "Students read own enrollments" on public.enrollments for select using (student_id = auth.uid() or public.is_admin());
+create policy "Admins manage enrollments" on public.enrollments for all using (public.is_admin()) with check (public.is_admin());
 create policy "Admins manage payment plans" on public.paystack_plans for all using (public.is_admin()) with check (public.is_admin());
 create policy "Students read own subscriptions" on public.subscriptions for select using (student_id = auth.uid() or public.is_admin());
 create policy "Admins manage subscriptions" on public.subscriptions for all using (public.is_admin()) with check (public.is_admin());
@@ -231,6 +245,12 @@ insert into public.track_welcome_videos (track, title, description) values
 ('Drawing', 'Welcome to Drawing Guided', 'Your orientation to the drawing studio and weekly learning rhythm.'),
 ('Painting', 'Welcome to Painting Guided', 'Your orientation to materials, practice, and the painting studio.')
 on conflict (track) do nothing;
+
+insert into public.enrollments (student_id, track, enrollment_date, payment_status)
+select id, track, coalesce(enrollment_date, now()), payment_status
+from public.profiles
+where payment_status = 'active'
+on conflict (student_id, track) do nothing;
 
 -- After signing up, promote Benjamin once:
 -- update public.profiles set role = 'admin' where email = 'admin@beoarts.com';

@@ -16,12 +16,26 @@ export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const supabase = await createClient();
   if (!secret || !supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json({ error: "Live enrollment is not configured yet. Please contact support." }, { status: 503 });
+    const missing = [
+      !secret && "PAYSTACK_SECRET_KEY",
+      !process.env.NEXT_PUBLIC_SUPABASE_URL && "NEXT_PUBLIC_SUPABASE_URL",
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      !process.env.SUPABASE_SERVICE_ROLE_KEY && "SUPABASE_SERVICE_ROLE_KEY",
+    ].filter(Boolean);
+    return NextResponse.json({ error: `Payment setup is missing ${missing.join(", ")} in the deployed environment. Add it and redeploy.` }, { status: 503 });
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return NextResponse.json({ error: "Please sign in again" }, { status: 401 });
   const { track, plan } = parsed.data;
+  const { data: existingEnrollment, error: enrollmentError } = await supabase.from("enrollments").select("payment_status").eq("student_id", user.id).eq("track", track).maybeSingle();
+  if (enrollmentError) return NextResponse.json({ error: "The multi-track enrollment migration has not been applied in Supabase." }, { status: 503 });
+  if (existingEnrollment?.payment_status === "active") {
+    return NextResponse.json({ error: `You are already enrolled in ${track}. Open it from Resources.` }, { status: 409 });
+  }
+  if (existingEnrollment?.payment_status === "past_due") {
+    return NextResponse.json({ error: "This course has a past-due subscription. Manage the payment from Settings instead of starting another subscription." }, { status: 409 });
+  }
   const countryCode = countryCodeFromHeaders(request.headers);
   const international = countryCode !== "NG";
   const currency: Currency = international ? "USD" : "NGN";

@@ -4,7 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { WelcomeVideo } from "@/components/welcome-video";
 import { demoProfile, lessonsFor } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
-import type { Lesson, Profile, TrackWelcomeVideo } from "@/lib/types";
+import type { Enrollment, Lesson, Profile, Track, TrackWelcomeVideo } from "@/lib/types";
 import { formatDate, isLessonUnlocked } from "@/lib/utils";
 
 function defaultWelcome(profile: Profile): TrackWelcomeVideo {
@@ -16,14 +16,22 @@ function defaultWelcome(profile: Profile): TrackWelcomeVideo {
   };
 }
 
-async function dashboardData(): Promise<{ profile: Profile; lessons: Lesson[]; welcomeVideo: TrackWelcomeVideo }> {
+async function dashboardData(requestedTrack?: string): Promise<{ profile: Profile; lessons: Lesson[]; welcomeVideo: TrackWelcomeVideo; enrollments: Enrollment[] }> {
   const supabase = await createClient();
-  if (!supabase) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile) };
+  if (!supabase) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [{ student_id: demoProfile.id, track: demoProfile.track, enrollment_date: demoProfile.enrollment_date!, payment_status: "active" }] };
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile) };
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-  if (!profile) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile) };
-  const activeProfile = profile as Profile;
+  if (!user) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [] };
+  const [{ data: profile }, { data: enrollmentRows }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("enrollments").select("student_id,track,enrollment_date,payment_status").eq("student_id", user.id).eq("payment_status", "active").order("enrollment_date"),
+  ]);
+  if (!profile) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [] };
+  const enrollments = (enrollmentRows || []) as Enrollment[];
+  const requested = ["Drawing", "Painting", "Discovery"].includes(requestedTrack || "") ? requestedTrack as Track : null;
+  const selected = enrollments.find((item) => item.track === requested)
+    || enrollments.find((item) => item.track === profile.track)
+    || enrollments[0];
+  const activeProfile = { ...profile, track: selected?.track || profile.track, enrollment_date: selected?.enrollment_date || profile.enrollment_date, payment_status: selected?.payment_status || profile.payment_status } as Profile;
   const [{ data: lessons }, { data: welcomeVideo }] = await Promise.all([
     supabase.from("lessons").select("*").eq("track", activeProfile.track).order("week_number"),
     supabase.from("track_welcome_videos").select("track,title,youtube_video_id,description").eq("track", activeProfile.track).maybeSingle(),
@@ -32,11 +40,13 @@ async function dashboardData(): Promise<{ profile: Profile; lessons: Lesson[]; w
     profile: activeProfile,
     lessons: (lessons || []) as Lesson[],
     welcomeVideo: (welcomeVideo as TrackWelcomeVideo | null) || defaultWelcome(activeProfile),
+    enrollments,
   };
 }
 
-export default async function DashboardPage() {
-  const { profile, lessons, welcomeVideo } = await dashboardData();
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ track?: string }> }) {
+  const { track } = await searchParams;
+  const { profile, lessons, welcomeVideo, enrollments } = await dashboardData(track);
   const unlocked = lessons.filter((lesson) => isLessonUnlocked(lesson, profile));
   const current = unlocked.at(-1);
   const progress = lessons.length ? Math.round((unlocked.length / lessons.length) * 100) : 0;
@@ -52,6 +62,7 @@ export default async function DashboardPage() {
         <span className="progress-value">{progress}%</span>
         <div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
       </section>
+      {enrollments.length > 1 && <nav className="course-switcher" aria-label="Your enrolled courses">{enrollments.map((enrollment) => <Link className={enrollment.track === profile.track ? "active" : ""} href={`/dashboard?track=${enrollment.track}`} key={enrollment.track}>{enrollment.track}</Link>)}</nav>}
       <WelcomeVideo video={welcomeVideo} />
       <div className="content-title"><h2>Your lessons</h2><span>{unlocked.length} of {lessons.length} available</span></div>
       <div className="lesson-list">

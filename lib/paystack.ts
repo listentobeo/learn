@@ -88,12 +88,22 @@ export async function recordSuccessfulCharge(data: any) {
   if (!studentId || !track) return false;
 
   const paidAt = new Date(data.paid_at || data.paidAt || Date.now()).toISOString();
-  const { data: profile } = await admin.from("profiles").select("enrollment_date").eq("id", studentId).single();
-  const [{ error: profileError }, { error: paymentError }] = await Promise.all([
-    admin.from("profiles").update({
+  const [{ data: profile }, { data: enrollment }] = await Promise.all([
+    admin.from("profiles").select("track,enrollment_date,payment_status").eq("id", studentId).single(),
+    admin.from("enrollments").select("enrollment_date").eq("student_id", studentId).eq("track", track).maybeSingle(),
+  ]);
+  const enrollmentDate = enrollment?.enrollment_date || paidAt;
+  const [{ error: enrollmentError }, { error: profileError }, { error: paymentError }] = await Promise.all([
+    admin.from("enrollments").upsert({
+      student_id: studentId,
       track,
+      enrollment_date: enrollmentDate,
       payment_status: "active",
-      enrollment_date: profile?.enrollment_date || paidAt,
+    }, { onConflict: "student_id,track" }),
+    admin.from("profiles").update({
+      track: profile?.payment_status === "active" ? profile.track : track,
+      payment_status: "active",
+      enrollment_date: profile?.enrollment_date || enrollmentDate,
     }).eq("id", studentId),
     admin.from("payments").upsert({
       reference: data.reference,
@@ -108,7 +118,7 @@ export async function recordSuccessfulCharge(data: any) {
       paid_at: paidAt,
     }, { onConflict: "reference" }),
   ]);
-  if (profileError || paymentError) throw new Error(profileError?.message || paymentError?.message);
+  if (enrollmentError || profileError || paymentError) throw new Error(enrollmentError?.message || profileError?.message || paymentError?.message);
   return true;
 }
 
@@ -141,21 +151,29 @@ export async function updateSubscriptionStatus(data: any, status: "active" | "pa
   const admin = paystackAdmin();
   const code = data?.subscription_code || subscriptionCode(data);
   if (!code) return false;
-  const { data: subscription } = await admin.from("subscriptions").select("student_id").eq("subscription_code", code).maybeSingle();
+  const { data: subscription } = await admin.from("subscriptions").select("student_id,track").eq("subscription_code", code).maybeSingle();
   if (!subscription) return false;
   const profileStatus = status === "active" || status === "complete" ? "active" : "past_due";
-  const [{ error: subscriptionError }, { error: profileError }] = await Promise.all([
+  const [{ error: subscriptionError }, { error: enrollmentError }] = await Promise.all([
     admin.from("subscriptions").update({
       status,
       next_payment_date: data?.next_payment_date || data?.subscription?.next_payment_date || null,
       updated_at: new Date().toISOString(),
     }).eq("subscription_code", code),
-    admin.from("profiles").update({ payment_status: profileStatus }).eq("id", subscription.student_id),
+    admin.from("enrollments").update({ payment_status: profileStatus }).eq("student_id", subscription.student_id).eq("track", subscription.track),
   ]);
-  if (subscriptionError || profileError) throw new Error(subscriptionError?.message || profileError?.message);
+  if (subscriptionError || enrollmentError) throw new Error(subscriptionError?.message || enrollmentError?.message);
+  const { count: activeCount } = await admin.from("enrollments").select("*", { count: "exact", head: true }).eq("student_id", subscription.student_id).eq("payment_status", "active");
+  const { error: profileError } = await admin.from("profiles").update({ payment_status: activeCount ? "active" : profileStatus }).eq("id", subscription.student_id);
+  if (profileError) throw new Error(profileError.message);
   return true;
 }
 
 export async function verifyPaystackTransaction(reference: string) {
   return paystackRequest(`/transaction/verify/${encodeURIComponent(reference)}`);
+}
+
+export async function getSubscriptionManageLink(subscriptionCode: string) {
+  const data = await paystackRequest(`/subscription/${encodeURIComponent(subscriptionCode)}/manage/link`);
+  return data.link as string;
 }

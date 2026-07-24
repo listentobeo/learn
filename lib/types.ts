@@ -21,6 +21,13 @@ export type Profile = {
   role: "student" | "admin";
 };
 
+export type Enrollment = {
+  student_id: string;
+  track: Track;
+  enrollment_date: string;
+  payment_status: "pending" | "active" | "past_due";
+};
+
 export type QuizQuestion = {
   id: string;
   lesson_code: string;

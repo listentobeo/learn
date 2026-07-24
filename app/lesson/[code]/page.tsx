@@ -25,7 +25,10 @@ async function lessonData(code: string): Promise<{ profile: Profile; lesson: Les
     supabase.from("assignments").select("id,lesson_code,submitted_at,seen_at,reviewed,reviewed_at,feedback,feedback_at").eq("student_id", user.id).eq("lesson_code", code).maybeSingle(),
   ]);
   if (!profile || !lesson) return null;
-  return { profile: profile as Profile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[], assignment: assignment as AssignmentRecord | null };
+  const { data: enrollment } = await supabase.from("enrollments").select("enrollment_date,payment_status").eq("student_id", user.id).eq("track", lesson.track).eq("payment_status", "active").maybeSingle();
+  if (!enrollment) return null;
+  const activeProfile = { ...profile, track: lesson.track, enrollment_date: enrollment.enrollment_date, payment_status: enrollment.payment_status } as Profile;
+  return { profile: activeProfile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[], assignment: assignment as AssignmentRecord | null };
 }
 
 export default async function LessonPage({ params }: { params: Promise<{ code: string }> }) {
@@ -38,7 +41,7 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
   return (
     <AppShell name={profile.name} track={profile.track}>
       <div className="lesson-shell">
-        <Link className="back-link" href="/dashboard"><ArrowLeft size={15} /> Back to lessons</Link>
+        <Link className="back-link" href={`/dashboard?track=${lesson.track}`}><ArrowLeft size={15} /> Back to lessons</Link>
         <div className="lesson-heading"><div><span className="lesson-code">{lesson.lesson_code} · Week {lesson.week_number}</span><h1>{lesson.title}</h1></div><span className="pill">Lesson available</span></div>
         <div className="video">
           {video ? <iframe src={`https://www.youtube-nocookie.com/embed/${video.id}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <div className="video-placeholder"><div><PlayCircle size={44} /><strong>Lesson video</strong><br /><span>Connect a YouTube video ID in Supabase to play this lesson.</span></div></div>}

@@ -34,7 +34,7 @@ export function SettingsForm({ profile }: { profile: Profile }) {
       <h2>Profile details</h2>
       <div className="field"><label htmlFor="settings-name">Full name</label><input className="input" id="settings-name" value={name} onChange={(event) => setName(event.target.value)} required /></div>
       <div className="field"><label htmlFor="settings-email">Email address</label><input className="input" id="settings-email" value={profile.email} disabled /></div>
-      <div className="field"><label htmlFor="settings-track">Enrolled track</label><input className="input" id="settings-track" value={profile.track} disabled /></div>
+      <div className="field"><label htmlFor="settings-track">Primary track</label><input className="input" id="settings-track" value={profile.track} disabled /></div>
       <div className="field"><label htmlFor="settings-password">New password <span className="subtle">(optional)</span></label><input className="input" id="settings-password" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Leave blank to keep your password" /></div>
       <button className="button" disabled={loading}>{loading ? "Saving…" : "Save changes"}</button>
     </form>
