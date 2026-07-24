@@ -19,13 +19,9 @@ export function SettingsForm({ profile }: { profile: Profile }) {
       setLoading(false);
       return;
     }
-    const updates: PromiseLike<unknown>[] = [
-      supabase.from("profiles").update({ name }).eq("id", profile.id),
-    ];
-    if (password) updates.push(supabase.auth.updateUser({ password }));
-    const results = await Promise.all(updates);
-    const failed = results.find((result) => typeof result === "object" && result && "error" in result && result.error);
-    if (failed) toast.error("We could not save every change.");
+    const { error: profileError } = await supabase.rpc("update_own_profile_name", { new_name: name });
+    const { error: passwordError } = password ? await supabase.auth.updateUser({ password }) : { error: null };
+    if (profileError || passwordError) toast.error(profileError?.message || passwordError?.message || "We could not save every change.");
     else {
       toast.success("Settings updated.");
       setPassword("");

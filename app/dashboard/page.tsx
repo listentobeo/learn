@@ -1,24 +1,42 @@
 import { ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { WelcomeVideo } from "@/components/welcome-video";
 import { demoProfile, lessonsFor } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
-import type { Lesson, Profile } from "@/lib/types";
+import type { Lesson, Profile, TrackWelcomeVideo } from "@/lib/types";
 import { formatDate, isLessonUnlocked } from "@/lib/utils";
 
-async function dashboardData(): Promise<{ profile: Profile; lessons: Lesson[] }> {
+function defaultWelcome(profile: Profile): TrackWelcomeVideo {
+  return {
+    track: profile.track,
+    title: `Welcome to ${profile.track}${profile.track === "Discovery" ? "" : " Guided"}`,
+    youtube_video_id: null,
+    description: "Begin here for an introduction to your track and the learning rhythm.",
+  };
+}
+
+async function dashboardData(): Promise<{ profile: Profile; lessons: Lesson[]; welcomeVideo: TrackWelcomeVideo }> {
   const supabase = await createClient();
-  if (!supabase) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track) };
+  if (!supabase) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile) };
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track) };
+  if (!user) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile) };
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  if (!profile) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile) };
   const activeProfile = profile as Profile;
-  const { data: lessons } = await supabase.from("lessons").select("*").eq("track", activeProfile.track).order("week_number");
-  return { profile: activeProfile, lessons: (lessons || []) as Lesson[] };
+  const [{ data: lessons }, { data: welcomeVideo }] = await Promise.all([
+    supabase.from("lessons").select("*").eq("track", activeProfile.track).order("week_number"),
+    supabase.from("track_welcome_videos").select("track,title,youtube_video_id,description").eq("track", activeProfile.track).maybeSingle(),
+  ]);
+  return {
+    profile: activeProfile,
+    lessons: (lessons || []) as Lesson[],
+    welcomeVideo: (welcomeVideo as TrackWelcomeVideo | null) || defaultWelcome(activeProfile),
+  };
 }
 
 export default async function DashboardPage() {
-  const { profile, lessons } = await dashboardData();
+  const { profile, lessons, welcomeVideo } = await dashboardData();
   const unlocked = lessons.filter((lesson) => isLessonUnlocked(lesson, profile));
   const current = unlocked.at(-1);
   const progress = lessons.length ? Math.round((unlocked.length / lessons.length) * 100) : 0;
@@ -34,6 +52,7 @@ export default async function DashboardPage() {
         <span className="progress-value">{progress}%</span>
         <div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
       </section>
+      <WelcomeVideo video={welcomeVideo} />
       <div className="content-title"><h2>Your lessons</h2><span>{unlocked.length} of {lessons.length} available</span></div>
       <div className="lesson-list">
         {lessons.map((lesson) => {

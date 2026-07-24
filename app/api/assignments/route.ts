@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+const statusFields = "id,lesson_code,submitted_at,seen_at,reviewed,reviewed_at,feedback,feedback_at";
+
+export async function GET(request: Request) {
+  const lessonCode = new URL(request.url).searchParams.get("lessonCode");
+  if (!lessonCode) return NextResponse.json({ error: "Lesson code is required" }, { status: 400 });
+  const supabase = await createClient();
+  if (!supabase) return NextResponse.json({ assignment: null, demo: true });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { data, error } = await supabase.from("assignments").select(statusFields).eq("student_id", user.id).eq("lesson_code", lessonCode).maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ assignment: data });
+}
+
 async function notifyBenjamin(studentName: string, lessonCode: string) {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
@@ -32,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please upload an image under 10 MB" }, { status: 400 });
   }
   const supabase = await createClient();
-  if (!supabase) return NextResponse.json({ demo: true });
+  if (!supabase) return NextResponse.json({ assignment: { id: "demo", lesson_code: lessonCode, submitted_at: new Date().toISOString(), seen_at: null, reviewed: false, reviewed_at: null, feedback: null, feedback_at: null }, demo: true });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -41,7 +55,7 @@ export async function POST(request: Request) {
   const { error: uploadError } = await supabase.storage.from("assignments").upload(path, file, { contentType: file.type });
   if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
   const { data: signed } = await supabase.storage.from("assignments").createSignedUrl(path, 60 * 60 * 24 * 7);
-  const { error } = await supabase.from("assignments").insert({ student_id: user.id, lesson_code: lessonCode, file_path: path, file_url: signed?.signedUrl || path });
+  const { data: assignment, error } = await supabase.from("assignments").insert({ student_id: user.id, lesson_code: lessonCode, file_path: path, file_url: signed?.signedUrl || path }).select(statusFields).single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
   try {
@@ -49,5 +63,5 @@ export async function POST(request: Request) {
   } catch {
     // The submission remains valid even if the external notification provider is unavailable.
   }
-  return NextResponse.json({ uploaded: true });
+  return NextResponse.json({ assignment });
 }

@@ -39,7 +39,9 @@ create table public.quiz_questions (
   option_b text not null,
   option_c text not null,
   option_d text not null,
-  correct_answer text not null check (correct_answer in ('a','b','c','d'))
+  correct_answer text not null check (correct_answer in ('a','b','c','d')),
+  question_order integer not null default 1,
+  created_at timestamptz not null default now()
 );
 
 create table public.quiz_submissions (
@@ -60,9 +62,20 @@ create table public.assignments (
   file_path text not null,
   file_url text not null,
   submitted_at timestamptz not null default now(),
+  seen_at timestamptz,
+  feedback text,
+  feedback_at timestamptz,
   reviewed boolean not null default false,
   reviewed_at timestamptz,
   unique (student_id, lesson_code)
+);
+
+create table public.track_welcome_videos (
+  track public.learning_track primary key,
+  title text not null,
+  youtube_video_id text,
+  description text not null default '',
+  updated_at timestamptz not null default now()
 );
 
 create table public.payments (
@@ -78,6 +91,31 @@ create table public.payments (
   status text not null,
   paid_at timestamptz,
   created_at timestamptz not null default now()
+);
+
+create table public.paystack_plans (
+  track public.learning_track not null,
+  currency text not null check (currency in ('NGN','USD')),
+  plan_code text not null unique,
+  amount numeric(12,2) not null,
+  invoice_limit integer not null default 3 check (invoice_limit > 0),
+  created_at timestamptz not null default now(),
+  primary key (track, currency)
+);
+
+create table public.subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.profiles(id) on delete cascade,
+  track public.learning_track not null,
+  plan_code text not null,
+  subscription_code text unique,
+  customer_code text,
+  status text not null default 'active',
+  next_payment_date timestamptz,
+  invoice_limit integer not null default 3,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, track)
 );
 
 create or replace function public.handle_new_user()
@@ -106,11 +144,33 @@ alter table public.lessons enable row level security;
 alter table public.quiz_questions enable row level security;
 alter table public.quiz_submissions enable row level security;
 alter table public.assignments enable row level security;
+alter table public.track_welcome_videos enable row level security;
 alter table public.payments enable row level security;
+alter table public.paystack_plans enable row level security;
+alter table public.subscriptions enable row level security;
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = ''
 as $$ select exists(select 1 from public.profiles where id = auth.uid() and role = 'admin'); $$;
+
+create or replace function public.update_own_profile_name(new_name text)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+  if char_length(trim(new_name)) < 2 or char_length(trim(new_name)) > 80 then
+    raise exception 'Name must be between 2 and 80 characters';
+  end if;
+  update public.profiles set name = trim(new_name) where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.update_own_profile_name(text) from public;
+grant execute on function public.update_own_profile_name(text) to authenticated;
 
 create policy "Students read own profile" on public.profiles for select using (id = auth.uid() or public.is_admin());
 create policy "Admins update profiles" on public.profiles for update using (public.is_admin());
@@ -126,7 +186,15 @@ create policy "Students submit own quiz" on public.quiz_submissions for insert w
 create policy "Students read own assignments" on public.assignments for select using (student_id = auth.uid() or public.is_admin());
 create policy "Students submit own assignments" on public.assignments for insert with check (student_id = auth.uid());
 create policy "Admins review assignments" on public.assignments for update using (public.is_admin());
+create policy "Students read their welcome video" on public.track_welcome_videos for select using (
+  exists(select 1 from public.profiles p where p.id = auth.uid() and p.payment_status = 'active' and (p.track = track_welcome_videos.track or p.role = 'admin'))
+);
+create policy "Admins insert welcome videos" on public.track_welcome_videos for insert with check (public.is_admin());
+create policy "Admins update welcome videos" on public.track_welcome_videos for update using (public.is_admin()) with check (public.is_admin());
 create policy "Students read own payments" on public.payments for select using (student_id = auth.uid() or public.is_admin());
+create policy "Admins manage payment plans" on public.paystack_plans for all using (public.is_admin()) with check (public.is_admin());
+create policy "Students read own subscriptions" on public.subscriptions for select using (student_id = auth.uid() or public.is_admin());
+create policy "Admins manage subscriptions" on public.subscriptions for all using (public.is_admin()) with check (public.is_admin());
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('assignments', 'assignments', false, 10000000, array['image/jpeg','image/png','image/webp'])
@@ -158,5 +226,11 @@ insert into public.lessons (track, lesson_code, title, week_number) values
 ('Painting','P12','The Final Painting',13)
 on conflict (lesson_code) do nothing;
 
+insert into public.track_welcome_videos (track, title, description) values
+('Discovery', 'Welcome to Discovery', 'Begin here before opening your first lesson.'),
+('Drawing', 'Welcome to Drawing Guided', 'Your orientation to the drawing studio and weekly learning rhythm.'),
+('Painting', 'Welcome to Painting Guided', 'Your orientation to materials, practice, and the painting studio.')
+on conflict (track) do nothing;
+
 -- After signing up, promote Benjamin once:
--- update public.profiles set role = 'admin' where email = 'benjamin@beoarts.com';
+-- update public.profiles set role = 'admin' where email = 'admin@beoarts.com';

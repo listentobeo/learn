@@ -1,13 +1,13 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const adminLogin = path === "/admin/login";
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) {
-    const demoAdmin = request.cookies.get("beo_admin_demo")?.value === "1";
+    const demoAdmin = process.env.NODE_ENV !== "production" && request.cookies.get("beo_admin_demo")?.value === "1";
     if (path.startsWith("/admin") && !adminLogin && !demoAdmin) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }

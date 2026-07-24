@@ -3,6 +3,7 @@ import { AdminLoginForm } from "@/components/admin-login-form";
 import { Logo } from "@/components/logo";
 
 export default function AdminLoginPage() {
+  const demoAllowed = process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_SUPABASE_URL;
   return (
     <div className="auth-page">
       <aside className="auth-art">
@@ -15,7 +16,7 @@ export default function AdminLoginPage() {
           <div className="eyebrow" style={{ marginTop: 44 }}><ShieldCheck size={15} /> Protected area</div>
           <h1>Admin access.</h1>
           <p className="subtle">Sign in with Benjamin’s administrator account to review students, quizzes, and assignments.</p>
-          <AdminLoginForm />
+          <AdminLoginForm demoAllowed={demoAllowed} />
         </div>
       </main>
     </div>

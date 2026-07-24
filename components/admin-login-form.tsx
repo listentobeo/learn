@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
-export function AdminLoginForm() {
+export function AdminLoginForm({ demoAllowed }: { demoAllowed: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const demo = !createClient();
+
+  if (demo && !demoAllowed) {
+    return <div className="settings-note" style={{ marginTop: 28 }}>Administrator login is unavailable until the Supabase environment variables are configured.</div>;
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

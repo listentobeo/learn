@@ -31,3 +31,21 @@ export type QuizQuestion = {
   option_d: string;
   correct_answer?: "a" | "b" | "c" | "d";
 };
+
+export type AssignmentRecord = {
+  id: string;
+  lesson_code: string;
+  submitted_at: string;
+  seen_at: string | null;
+  reviewed: boolean;
+  reviewed_at: string | null;
+  feedback: string | null;
+  feedback_at: string | null;
+};
+
+export type TrackWelcomeVideo = {
+  track: Track;
+  title: string;
+  youtube_video_id: string | null;
+  description: string;
+};

@@ -20,6 +20,7 @@ export function AppShell({ children, name = "Amara Okafor", track = "Drawing", a
         <div className="mobile-top"><Logo href={homeHref} /><SignOutButton admin={admin} /></div>
         {children}
       </main>
+      <SideNav admin={admin} mobile />
     </div>
   );
 }

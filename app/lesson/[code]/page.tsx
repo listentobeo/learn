@@ -6,25 +6,26 @@ import { AssignmentUpload } from "@/components/assignment-upload";
 import { Quiz } from "@/components/quiz";
 import { demoProfile, demoQuestions, lessonsFor } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
-import type { Lesson, Profile, QuizQuestion } from "@/lib/types";
+import type { AssignmentRecord, Lesson, Profile, QuizQuestion } from "@/lib/types";
 import { isLessonUnlocked } from "@/lib/utils";
 import { getYouTubeVideo } from "@/lib/youtube";
 
-async function lessonData(code: string): Promise<{ profile: Profile; lesson: Lesson; questions: QuizQuestion[] } | null> {
+async function lessonData(code: string): Promise<{ profile: Profile; lesson: Lesson; questions: QuizQuestion[]; assignment: AssignmentRecord | null } | null> {
   const supabase = await createClient();
   if (!supabase) {
     const lesson = lessonsFor(demoProfile.track).find((item) => item.lesson_code === code);
-    return lesson ? { profile: demoProfile, lesson, questions: demoQuestions(code) } : null;
+    return lesson ? { profile: demoProfile, lesson, questions: demoQuestions(code), assignment: null } : null;
   }
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const [{ data: profile }, { data: lesson }, { data: questions }] = await Promise.all([
+  const [{ data: profile }, { data: lesson }, { data: questions }, { data: assignment }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("lessons").select("*").eq("lesson_code", code).single(),
-    supabase.from("quiz_questions").select("id,lesson_code,question_text,option_a,option_b,option_c,option_d").eq("lesson_code", code).order("id"),
+    supabase.from("quiz_questions").select("id,lesson_code,question_text,option_a,option_b,option_c,option_d").eq("lesson_code", code).order("question_order"),
+    supabase.from("assignments").select("id,lesson_code,submitted_at,seen_at,reviewed,reviewed_at,feedback,feedback_at").eq("student_id", user.id).eq("lesson_code", code).maybeSingle(),
   ]);
   if (!profile || !lesson) return null;
-  return { profile: profile as Profile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[] };
+  return { profile: profile as Profile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[], assignment: assignment as AssignmentRecord | null };
 }
 
 export default async function LessonPage({ params }: { params: Promise<{ code: string }> }) {
@@ -32,7 +33,7 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
   const data = await lessonData(code);
   if (!data) notFound();
   if (!isLessonUnlocked(data.lesson, data.profile)) notFound();
-  const { profile, lesson, questions } = data;
+  const { profile, lesson, questions, assignment } = data;
   const video = await getYouTubeVideo(lesson.youtube_video_id);
   return (
     <AppShell name={profile.name} track={profile.track}>
@@ -47,7 +48,7 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
             <section className="surface"><h2>Lesson notes</h2><div className="notes">{lesson.notes}</div></section>
             <Quiz questions={questions.length ? questions : demoQuestions(code)} lessonCode={code} />
           </div>
-          <AssignmentUpload lessonCode={code} instructions={lesson.assignment_instructions} />
+          <AssignmentUpload lessonCode={code} instructions={lesson.assignment_instructions} initialAssignment={assignment} whatsappNumber={process.env.BENJAMIN_WHATSAPP_NUMBER} studentName={profile.name} />
         </div>
       </div>
     </AppShell>
