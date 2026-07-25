@@ -9,15 +9,14 @@
 - Full payments, three-payment guided subscriptions, renewal status handling, and subscription management from Settings.
 - Weekly lesson drip for Drawing and Painting; immediate access for Discovery.
 - Configurable track welcome videos with no quiz or assignment.
-- Lesson videos, notes, quiz attempts/retakes, private assignment uploads, and assignment review status.
+- Lesson videos, notes, secure quiz attempts/retakes with post-submission answer corrections, private assignment uploads, and assignment review status.
 - Benjamin can mark work as seen, hold a WhatsApp review call, save feedback, and mark the review complete.
 - Student/parent-readable feedback, mobile navigation, real admin statistics, student records, and protected admin settings.
 
 ## Phase 1 — final curriculum and self-learning quizzes
 
 - Import the final workbook lesson notes, questions, correct answers, and teaching explanations.
-- Show correct answers and explanations after submission, especially for missed questions.
-- Let students continue after reviewing corrections or retake the quiz.
+- Add the workbook's teaching explanation for each correct answer; correct choices and retakes are already implemented.
 - Preserve every attempt while using the latest attempt for progress reporting.
 - Confirm that P3.5 and every other required lesson count toward track completion.
 
