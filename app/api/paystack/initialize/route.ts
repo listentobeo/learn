@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { countryCodeFromHeaders } from "@/lib/geo";
+import { resolveCountryCode } from "@/lib/geo";
 import { getOrCreateMonthlyPlan } from "@/lib/paystack";
 import { coursePrices, type Currency } from "@/lib/pricing";
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   if (existingEnrollment?.payment_status === "past_due") {
     return NextResponse.json({ error: "This course has a past-due subscription. Manage the payment from Settings instead of starting another subscription." }, { status: 409 });
   }
-  const countryCode = countryCodeFromHeaders(request.headers);
+  const countryCode = await resolveCountryCode(request.headers);
   const international = countryCode !== "NG";
   const currency: Currency = international ? "USD" : "NGN";
   const price = coursePrices[track][currency];

@@ -79,7 +79,7 @@ export function CheckoutForm({ track, countryCode }: { track: Track; countryCode
       <div style={{ maxWidth: 650, margin: "70px auto", padding: "0 20px" }}>
         <div className="eyebrow">Secure enrollment</div>
         <h1 className="serif" style={{ fontSize: 48, fontWeight: 500, margin: "20px 0 10px" }}>Choose your payment.</h1>
-        <p className="subtle">You’re enrolling in the {track} track. {international ? `International checkout · ${countryCode} · card payment only.` : "Nigerian checkout · local payment methods available for full payment."}</p>
+        <p className="subtle">You’re enrolling in the {track} track. {international ? `International checkout${countryCode === "UNKNOWN" ? "" : ` · ${countryCode}`} · card payment only.` : "Nigerian checkout · local payment methods available for full payment."}</p>
         <div className="surface" style={{ marginTop: 32 }}>
           <h2>{track} {track === "Discovery" ? "Course" : "Guided"}</h2>
           <label className="option" style={{ marginBottom: 10 }}><input type="radio" name="plan" checked={plan === "full"} onChange={() => setPlan("full")} /><span><strong>Pay in full</strong><br /><span className="subtle">{formatPrice(selectedPrices.full, currency)} <span className="price-equivalent">({formatPrice(alternatePrices.full, alternateCurrency)})</span></span></span></label>
