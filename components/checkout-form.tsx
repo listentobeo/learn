@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Track } from "@/lib/types";
-import { coursePrices, formatPrice, type Currency } from "@/lib/pricing";
+import { coursePrices, formatPrice } from "@/lib/pricing";
 
 declare global {
   interface Window {
@@ -20,8 +20,8 @@ export function CheckoutForm({ track, countryCode }: { track: Track; countryCode
   const [loading, setLoading] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
   const international = countryCode !== "NG";
-  const currency: Currency = international ? "USD" : "NGN";
-  const alternateCurrency: Currency = international ? "NGN" : "USD";
+  const currency = "NGN" as const;
+  const alternateCurrency = "USD" as const;
   const selectedPrices = coursePrices[track][currency];
   const alternatePrices = coursePrices[track][alternateCurrency];
   const amount = plan === "monthly" ? selectedPrices.monthly : selectedPrices.full;
@@ -79,7 +79,7 @@ export function CheckoutForm({ track, countryCode }: { track: Track; countryCode
       <div style={{ maxWidth: 650, margin: "70px auto", padding: "0 20px" }}>
         <div className="eyebrow">Secure enrollment</div>
         <h1 className="serif" style={{ fontSize: 48, fontWeight: 500, margin: "20px 0 10px" }}>Choose your payment.</h1>
-        <p className="subtle">You’re enrolling in the {track} track. {international ? `International checkout${countryCode === "UNKNOWN" ? "" : ` · ${countryCode}`} · card payment only.` : "Nigerian checkout · local payment methods available for full payment."}</p>
+        <p className="subtle">You’re enrolling in the {track} track. {international ? `International checkout${countryCode === "UNKNOWN" ? "" : ` · ${countryCode}`} · card payment only. Your card is charged in naira and your bank converts the amount.` : "Nigerian checkout · local payment methods available for full payment."}</p>
         <div className="surface" style={{ marginTop: 32 }}>
           <h2>{track} {track === "Discovery" ? "Course" : "Guided"}</h2>
           <label className="option" style={{ marginBottom: 10 }}><input type="radio" name="plan" checked={plan === "full"} onChange={() => setPlan("full")} /><span><strong>Pay in full</strong><br /><span className="subtle">{formatPrice(selectedPrices.full, currency)} <span className="price-equivalent">({formatPrice(alternatePrices.full, alternateCurrency)})</span></span></span></label>
@@ -98,7 +98,7 @@ export function CheckoutForm({ track, countryCode }: { track: Track; countryCode
             <span><Check size={15} color="#C9A84C" /> Guided review with Benjamin</span>
           </div>
           <button className="button" style={{ width: "100%" }} onClick={pay} disabled={loading || !scriptReady}>{loading ? "Waiting for payment…" : !scriptReady ? "Loading secure checkout…" : `Pay ${formatPrice(amount || 0, currency)}`}</button>
-          <p style={{ textAlign: "center", color: "#737b88", fontSize: 11, margin: "15px 0 0" }}><ShieldCheck size={13} /> Payment secured by Paystack · charged in {currency}{alternateAmount ? ` · ${formatPrice(alternateAmount, alternateCurrency)} reference` : ""}</p>
+          <p style={{ textAlign: "center", color: "#737b88", fontSize: 11, margin: "15px 0 0" }}><ShieldCheck size={13} /> Payment secured by Paystack · charged in NGN{alternateAmount ? ` · approximately ${formatPrice(alternateAmount, alternateCurrency)}` : ""}</p>
         </div>
       </div>
     </>

@@ -5,7 +5,7 @@
 - Supabase email/password authentication with student and admin roles.
 - Drawing, Painting, and Discovery enrollment through Paystack.
 - Students can own multiple tracks and switch between them without losing progress.
-- NGN checkout for Nigeria; USD card-only checkout for international students.
+- NGN settlement for every country; international students use card-only checkout with a display-only USD estimate.
 - Full payments, three-payment guided subscriptions, renewal status handling, and subscription management from Settings.
 - Weekly lesson drip for Drawing and Painting; immediate access for Discovery.
 - Configurable track welcome videos with no quiz or assignment.

@@ -24,8 +24,8 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
 2. Run `supabase/seed_original_curriculum.sql` to load the 32 original lessons and all 96 ordered quiz questions.
 3. Add the environment variables from `.env.example`.
 4. In Paystack, set the webhook to `https://learn.beoarts.com/api/paystack/webhook`.
-   Enable international/USD payments on the Paystack business; non-Nigerian visitors are charged in USD and restricted to card checkout.
-   Guided monthly enrollment creates a three-payment Paystack subscription automatically. Existing Paystack plan codes may optionally be supplied through the four `PAYSTACK_*_MONTHLY_PLAN_CODE_*` variables.
+   Enable international card payments on the Paystack business. Every transaction is charged and settled in NGN; non-Nigerian visitors are restricted to card checkout and see a display-only USD estimate.
+   Guided monthly enrollment creates a three-payment NGN Paystack subscription automatically. Existing plan codes may optionally be supplied through the two `PAYSTACK_*_MONTHLY_PLAN_CODE_NGN` variables.
 5. Add each unlisted YouTube video ID, lesson notes, and assignment instructions in Supabase.
 6. Promote Benjamin’s profile to `admin` with the final SQL statement in the schema.
 7. Configure WhatsApp Cloud API variables, or Resend variables for the email fallback.

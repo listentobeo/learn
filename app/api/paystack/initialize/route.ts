@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { resolveCountryCode } from "@/lib/geo";
 import { getOrCreateMonthlyPlan } from "@/lib/paystack";
-import { coursePrices, type Currency } from "@/lib/pricing";
+import { coursePrices } from "@/lib/pricing";
 
 const payload = z.object({
   track: z.enum(["Drawing", "Painting", "Discovery"]),
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
   const countryCode = await resolveCountryCode(request.headers);
   const international = countryCode !== "NG";
-  const currency: Currency = international ? "USD" : "NGN";
+  const currency = "NGN" as const;
   const price = coursePrices[track][currency];
   const amount = plan === "monthly" ? price.monthly : price.full;
   if (!amount || (track === "Discovery" && plan === "monthly")) {
