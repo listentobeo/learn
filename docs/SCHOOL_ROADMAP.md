@@ -102,6 +102,14 @@ Checking assignments alone is insufficient because a student may submit their fi
 
 ## Phase 5 — assisted assignment review
 
-- Train an AI review assistant only after enough Benjamin-approved review examples exist.
-- Benjamin remains the final reviewer; feedback is never sent automatically without approval.
-- Define student consent, training-data boundaries, retention, deletion, privacy, and quality-control rules before implementation.
+- Implement the dynamic, lesson-specific review system in [`AI_REVIEW_SPEC.md`](./AI_REVIEW_SPEC.md).
+- On submission, load the lesson title, notes, assignment instructions, week number, track, and three quiz concepts from Supabase.
+- Select the exact Drawing or Painting criteria for that week; use the constant Discovery rubric for D1–D7.
+- Score only skills already taught by that point in the curriculum. Never penalise a student for a later technique.
+- Add a written-response field and database column for Discovery assignments; its rubric cannot work correctly with the current image-only submission.
+- Send the lesson context, selected rubric, written response where applicable, and submitted image to the configured vision-capable Claude model.
+- Store structured draft results: five criterion scores, child-friendly reasons, priority fix, positive callout, and review-call focus.
+- Show AI results only to Benjamin in the admin review panel. Benjamin edits/approves them before any feedback reaches the student or parent.
+- Keep manual review fully usable whenever the AI provider is unavailable.
+- Train or fine-tune only after enough Benjamin-approved examples exist.
+- Define student/parent consent, training-data boundaries, retention, deletion, privacy, model versioning, cost limits, and quality-control rules before activation.
