@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { CertificateEmailRetryButton } from "@/components/certificate-email-retry-button";
 import { NotificationRetryButton } from "@/components/notification-retry-button";
+import { RunCompletionChecksButton } from "@/components/run-completion-checks-button";
 import { createClient } from "@/lib/supabase/server";
 import type { Track } from "@/lib/types";
 
@@ -34,6 +35,10 @@ export default async function AdminAutomationsPage() {
   return (
     <AppShell admin name="Benjamin Odeke" track="">
       <div className="dash-head"><div><span className="subtle">Curriculum, certificates and messages</span><h1>School automation.</h1></div><span className="pill">{!live ? "Sample mode" : failed ? `${failed} need attention` : "● Systems clear"}</span></div>
+      <div className="automation-section-head">
+        <p className="subtle">Queued checks run automatically; use this control to process them immediately.</p>
+        <RunCompletionChecksButton />
+      </div>
       <section className="admin-stats">
         <div className="stat"><span>Curriculum issues</span><strong>{auditIssues.length}</strong></div>
         <div className="stat"><span>Completion checks</span><strong>{pendingChecks}</strong></div>
