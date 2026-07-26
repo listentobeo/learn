@@ -37,6 +37,7 @@ export type QuizQuestion = {
   option_c: string;
   option_d: string;
   correct_answer?: "a" | "b" | "c" | "d";
+  correct_answer_text?: string;
 };
 
 export type AssignmentRecord = {

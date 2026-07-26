@@ -11,12 +11,14 @@ export function AssignmentUpload({
   initialAssignment,
   whatsappNumber,
   studentName,
+  quizCompleted,
 }: {
   lessonCode: string;
   instructions: string;
   initialAssignment: AssignmentRecord | null;
   whatsappNumber?: string;
   studentName: string;
+  quizCompleted: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [assignment, setAssignment] = useState<AssignmentRecord | null>(initialAssignment);
@@ -73,6 +75,17 @@ export function AssignmentUpload({
         <p>{assignment.reviewed ? "Your review call is complete. Benjamin’s notes are saved below for you and your parent or guardian." : assignment.seen_at ? "Your work has been opened. Use the button below to agree on a suitable WhatsApp review-call time." : "Benjamin has been notified. This status updates automatically when your work is opened."}</p>
         {assignment.feedback && <div className="feedback-box"><span>Benjamin’s feedback</span><p>{assignment.feedback}</p></div>}
         {whatsappUrl && !assignment.reviewed && <a className="button ghost" style={{ width: "100%" }} href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} /> Schedule WhatsApp call</a>}
+      </aside>
+    );
+  }
+
+  if (!quizCompleted) {
+    return (
+      <aside className="surface assignment-card assignment-locked">
+        <Clock3 size={22} />
+        <div className="eyebrow">Complete the knowledge check</div>
+        <h2>Practical assignment</h2>
+        <p>Submit the lesson quiz and review your answers first. Your assignment upload will unlock when you choose “Continue to assignment.”</p>
       </aside>
     );
   }

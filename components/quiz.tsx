@@ -1,49 +1,100 @@
 "use client";
 
+import { CheckCircle2, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { QuizQuestion } from "@/lib/types";
 
-export function Quiz({ questions, lessonCode }: { questions: QuizQuestion[]; lessonCode: string }) {
+type AnswerKey = "a" | "b" | "c" | "d";
+type ReviewItem = {
+  questionId: string;
+  selectedAnswer: AnswerKey;
+  correctAnswer: AnswerKey;
+  isCorrect: boolean;
+  explanation: string;
+};
+
+export function Quiz({
+  questions,
+  lessonCode,
+  onContinue,
+}: {
+  questions: QuizQuestion[];
+  lessonCode: string;
+  onContinue: () => void;
+}) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [score, setScore] = useState<number | null>(null);
   const [attempt, setAttempt] = useState(1);
-  const complete = useMemo(() => questions.every((q) => answers[q.id]), [answers, questions]);
+  const [review, setReview] = useState<ReviewItem[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const complete = useMemo(() => questions.every((question) => answers[question.id]), [answers, questions]);
+
+  function answerText(question: QuizQuestion, answer: AnswerKey) {
+    return question[`option_${answer}`];
+  }
 
   async function submit() {
     if (!complete) return toast.error("Choose an answer for each question.");
-    const res = await fetch("/api/quiz/submit", {
+    setSubmitting(true);
+    const response = await fetch("/api/quiz/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lessonCode, answers }),
     });
-    if (!res.ok) return toast.error("We could not submit your quiz. Please try again.");
-    const result = await res.json();
+    const result = await response.json();
+    setSubmitting(false);
+    if (!response.ok) return toast.error(result.error || "We could not submit your quiz. Please try again.");
     setScore(result.score);
     setAttempt(result.attempt ?? attempt);
+    setReview(result.review || []);
   }
 
   function retake() {
     setAnswers({});
-    setAttempt((current) => current + 1);
     setScore(null);
+    setReview([]);
   }
 
   if (score !== null) {
     return (
-      <div className="quiz surface">
+      <section className="quiz surface">
         <div className="eyebrow">Attempt {attempt} complete</div>
         <h2 style={{ fontSize: 35, marginTop: 18 }}>You scored {score} / {questions.length}</h2>
-        <p className="subtle">{score === questions.length ? "Excellent observation. You’re ready to put the idea into practice." : "Good work. Revisit the lesson notes before beginning your assignment."}</p>
-        <button className="button ghost" type="button" onClick={retake}>Retake quiz</button>
-      </div>
+        <p className="subtle">{score === questions.length ? "Excellent work. Every answer is correct." : "Review each correction below. You can retake the quiz or continue when the answers make sense."}</p>
+        <div className="quiz-review">
+          {questions.map((question, index) => {
+            const result = review.find((item) => item.questionId === question.id);
+            if (!result) return null;
+            return (
+              <div className={`quiz-review-item ${result.isCorrect ? "correct" : "wrong"}`} key={question.id}>
+                <div className="quiz-review-title">
+                  {result.isCorrect ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+                  <strong>{index + 1}. {question.question_text}</strong>
+                </div>
+                <p><span>Your answer:</span> {result.selectedAnswer.toUpperCase()}. {answerText(question, result.selectedAnswer)}</p>
+                {!result.isCorrect && (
+                  <>
+                    <p className="correct-answer"><span>Correct answer:</span> {result.correctAnswer.toUpperCase()}. {answerText(question, result.correctAnswer)}</p>
+                    {result.explanation && <p className="answer-explanation"><span>Why:</span> {result.explanation}</p>}
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="quiz-actions">
+          <button className="button ghost" type="button" onClick={retake}>Retake quiz</button>
+          <button className="button" type="button" onClick={onContinue}>Continue to assignment</button>
+        </div>
+      </section>
     );
   }
 
   return (
     <section className="quiz surface">
       <h2>Lesson quiz</h2>
-      <p className="subtle" style={{ fontSize: 13 }}>Three quick questions. You can retake the quiz whenever you want to improve your score.</p>
+      <p className="subtle" style={{ fontSize: 13 }}>Three quick questions. After submitting, you’ll see corrections for anything you missed.</p>
       {questions.map((question, index) => (
         <div className="question" key={question.id}>
           <h3>{index + 1}. {question.question_text}</h3>
@@ -57,7 +108,7 @@ export function Quiz({ questions, lessonCode }: { questions: QuizQuestion[]; les
           </div>
         </div>
       ))}
-      <button className="button" onClick={submit} disabled={!complete}>Submit quiz</button>
+      <button className="button" onClick={submit} disabled={!complete || submitting}>{submitting ? "Checking answers…" : "Submit quiz"}</button>
     </section>
   );
 }

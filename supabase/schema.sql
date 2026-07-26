@@ -40,6 +40,7 @@ create table public.quiz_questions (
   option_c text not null,
   option_d text not null,
   correct_answer text not null check (correct_answer in ('a','b','c','d')),
+  correct_answer_text text not null default '',
   question_order integer not null default 1,
   created_at timestamptz not null default now()
 );

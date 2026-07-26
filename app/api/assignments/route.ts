@@ -49,6 +49,13 @@ export async function POST(request: Request) {
   if (!supabase) return NextResponse.json({ assignment: { id: "demo", lesson_code: lessonCode, submitted_at: new Date().toISOString(), seen_at: null, reviewed: false, reviewed_at: null, feedback: null, feedback_at: null }, demo: true });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { count: quizAttempts, error: quizError } = await supabase
+    .from("quiz_submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", user.id)
+    .eq("lesson_code", lessonCode);
+  if (quizError) return NextResponse.json({ error: quizError.message }, { status: 400 });
+  if (!quizAttempts) return NextResponse.json({ error: "Complete the lesson quiz before submitting your assignment." }, { status: 403 });
 
   const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${user.id}/${lessonCode}-${Date.now()}.${extension}`;
