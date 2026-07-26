@@ -14,14 +14,15 @@ Deno.serve(async (request) => {
   const suppliedWebhookSecret = request.headers.get("x-webhook-secret");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const bearerToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const apiKey = request.headers.get("apikey");
   const authorisedByWebhookSecret = Boolean(
     configuredWebhookSecret && suppliedWebhookSecret === configuredWebhookSecret,
   );
   const authorisedByServiceRole = Boolean(
-    serviceRoleKey && bearerToken === serviceRoleKey,
+    serviceRoleKey && (bearerToken === serviceRoleKey || apiKey === serviceRoleKey),
   );
   if (!authorisedByWebhookSecret && !authorisedByServiceRole) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Completion webhook authentication failed", { status: 401 });
   }
 
   const payload = await request.json() as Payload;
