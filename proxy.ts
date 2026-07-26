@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
   if (!user && path.startsWith("/admin") && !adminLogin) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
-  if (!user && (path.startsWith("/dashboard") || path.startsWith("/lesson") || path.startsWith("/resources") || path.startsWith("/settings"))) {
+  if (!user && (path.startsWith("/dashboard") || path.startsWith("/lesson") || path.startsWith("/resources") || path.startsWith("/settings") || path.startsWith("/progress") || path.startsWith("/reviews") || path.startsWith("/guides"))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (user && path.startsWith("/admin")) {
@@ -40,4 +40,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/dashboard/:path*", "/lesson/:path*", "/resources/:path*", "/settings/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/dashboard/:path*", "/lesson/:path*", "/resources/:path*", "/settings/:path*", "/progress/:path*", "/reviews/:path*", "/guides/:path*", "/admin/:path*"] };

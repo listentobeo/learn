@@ -5,6 +5,8 @@ import { WelcomeVideoSettingsForm } from "@/components/welcome-video-settings-fo
 import { createClient } from "@/lib/supabase/server";
 import type { TrackWelcomeVideo } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminSettingsPage() {
   const supabase = await createClient();
   let name = "Benjamin Odeke";

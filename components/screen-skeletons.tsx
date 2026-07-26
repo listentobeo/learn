@@ -10,7 +10,7 @@ function SkeletonShell({ children }: { children: ReactNode }) {
       <aside className="sidebar skeleton-sidebar">
         <div className="skeleton-brand"><Bone width={58} height={40} /><Bone width={125} height={18} /></div>
         <div className="side-nav">
-          {[0, 1, 2, 3].map((item) => <Bone className="skeleton-nav-item" key={item} />)}
+          {[0, 1, 2, 3, 4].map((item) => <Bone className="skeleton-nav-item" key={item} />)}
         </div>
         <div className="student-card">
           <Bone className="skeleton-avatar" />
@@ -22,7 +22,7 @@ function SkeletonShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <div className="skeleton-mobile-nav" aria-hidden="true">
-        {[0, 1, 2, 3].map((item) => <Bone width={54} height={38} key={item} />)}
+        {[0, 1, 2, 3, 4].map((item) => <Bone width={48} height={38} key={item} />)}
       </div>
     </div>
   );

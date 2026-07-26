@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "audit:curriculum": "node scripts/audit-curriculum.mjs",
+    "preview:certificate": "tsx scripts/render-certificate-preview.ts"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "lucide-react": "^0.468.0",
@@ -29,6 +32,7 @@
     "@types/react-dom": "^19.0.4",
     "eslint": "^9.22.0",
     "eslint-config-next": "16.2.11",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.2"
   }
 }

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { deliverDueNotifications, queueStudentNotification } from "./notifications";
 import type { Currency } from "./pricing";
 import type { Track } from "./types";
 
@@ -119,6 +120,17 @@ export async function recordSuccessfulCharge(data: any) {
     }, { onConflict: "reference" }),
   ]);
   if (enrollmentError || profileError || paymentError) throw new Error(enrollmentError?.message || profileError?.message || paymentError?.message);
+  await queueStudentNotification(admin, {
+    studentId,
+    kind: "enrollment_confirmed",
+    subject: `Welcome to the ${track} Track`,
+    message: `Your payment is confirmed and your ${track} learning room is active. Start with the welcome video, then open your first lesson when you are ready.`,
+    link: `${process.env.NEXT_PUBLIC_SITE_URL || "https://learn.beoarts.com"}/dashboard?track=${track}`,
+    relatedType: "payment",
+    relatedId: data.reference,
+    dedupeKey: `enrollment-confirmed:${data.reference}`,
+  });
+  await deliverDueNotifications(admin, 5);
   return true;
 }
 
@@ -166,6 +178,19 @@ export async function updateSubscriptionStatus(data: any, status: "active" | "pa
   const { count: activeCount } = await admin.from("enrollments").select("*", { count: "exact", head: true }).eq("student_id", subscription.student_id).eq("payment_status", "active");
   const { error: profileError } = await admin.from("profiles").update({ payment_status: activeCount ? "active" : profileStatus }).eq("id", subscription.student_id);
   if (profileError) throw new Error(profileError.message);
+  if (status === "past_due") {
+    await queueStudentNotification(admin, {
+      studentId: subscription.student_id,
+      kind: "payment_failed",
+      subject: `Action needed for your ${subscription.track} payment`,
+      message: `Paystack could not complete your latest ${subscription.track} payment. Open Settings to review your subscription and keep your course access active.`,
+      link: `${process.env.NEXT_PUBLIC_SITE_URL || "https://learn.beoarts.com"}/settings`,
+      relatedType: "subscription",
+      relatedId: code,
+      dedupeKey: `payment-failed:${code}:${data?.invoice_code || data?.id || new Date().toISOString().slice(0, 10)}`,
+    });
+    await deliverDueNotifications(admin, 5);
+  }
   return true;
 }
 

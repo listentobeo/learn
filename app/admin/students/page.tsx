@@ -2,6 +2,8 @@ import { AppShell } from "@/components/app-shell";
 import { StudentRecordsTable } from "@/components/student-records-table";
 import { getAdminDashboardData } from "@/lib/admin-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminStudentsPage() {
   const data = await getAdminDashboardData();
   return (

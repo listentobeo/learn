@@ -38,6 +38,7 @@
   "exclude": [
     "node_modules",
     "node_modules.partial",
-    "node_modules.partial2"
+    "node_modules.partial2",
+    "supabase/functions"
   ]
 }

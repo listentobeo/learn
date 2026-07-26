@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckCircle2, Clock3, Eye, ImagePlus, MessageCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, CheckCircle2, Clock3, Eye, ImagePlus } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AssignmentRecord } from "@/lib/types";
 
@@ -9,27 +10,16 @@ export function AssignmentUpload({
   lessonCode,
   instructions,
   initialAssignment,
-  whatsappNumber,
-  studentName,
   quizCompleted,
 }: {
   lessonCode: string;
   instructions: string;
   initialAssignment: AssignmentRecord | null;
-  whatsappNumber?: string;
-  studentName: string;
   quizCompleted: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [assignment, setAssignment] = useState<AssignmentRecord | null>(initialAssignment);
   const [loading, setLoading] = useState(false);
-  const whatsappUrl = useMemo(() => {
-    const number = whatsappNumber?.replace(/\D/g, "");
-    if (!number) return null;
-    const message = `Hello Benjamin, I am ${studentName}. I submitted ${lessonCode} and would like to schedule my review call.`;
-    return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
-  }, [lessonCode, studentName, whatsappNumber]);
-
   useEffect(() => {
     if (!assignment || assignment.reviewed) return;
     const refresh = async () => {
@@ -74,7 +64,7 @@ export function AssignmentUpload({
         <h2 style={{ marginTop: 18 }}>{status.title}</h2>
         <p>{assignment.reviewed ? "Your review call is complete. Benjamin’s notes are saved below for you and your parent or guardian." : assignment.seen_at ? "Your work has been opened. Use the button below to agree on a suitable WhatsApp review-call time." : "Benjamin has been notified. This status updates automatically when your work is opened."}</p>
         {assignment.feedback && <div className="feedback-box"><span>Benjamin’s feedback</span><p>{assignment.feedback}</p></div>}
-        {whatsappUrl && !assignment.reviewed && <a className="button ghost" style={{ width: "100%" }} href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={16} /> Schedule WhatsApp call</a>}
+        {assignment.seen_at && !assignment.reviewed && <Link className="button ghost" style={{ width: "100%" }} href="/reviews"><CalendarClock size={16} /> Choose review-call time</Link>}
       </aside>
     );
   }

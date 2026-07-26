@@ -1,10 +1,12 @@
-import { ArrowRight, Compass, Palette, Pencil } from "lucide-react";
+import { ArrowRight, Compass, Palette, Pencil, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getCurrentProfile } from "@/lib/profile";
 import { dualPrice } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/server";
 import type { Enrollment, Track } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 const courses: Array<{ track: Track; icon: typeof Pencil; copy: string }> = [
   { track: "Drawing", icon: Pencil, copy: "A 12-week guided practice in observation, form, light, portraiture, and composition." },
@@ -44,6 +46,13 @@ export default async function ResourcesPage() {
             </article>
           );
         })}
+        <article className="resource-card free-guide-card">
+          <Sparkles size={25} />
+          <h2>The Gen Z Artist’s Social Guide</h2>
+          <p>A practical, pressure-free guide to sharing your work, finding your visual voice, making useful content, and building an honest audience online.</p>
+          <span className="resource-access enrolled">Free for every Beo student</span>
+          <Link href="/guides/social-media">Open the guide <ArrowRight size={14} /></Link>
+        </article>
       </section>
       <section className="surface" id="materials" style={{ marginTop: 22 }}>
         <div className="eyebrow">Your current studio setup</div>

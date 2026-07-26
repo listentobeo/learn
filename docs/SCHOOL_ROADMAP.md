@@ -13,15 +13,17 @@
 - Benjamin can mark work as seen, hold a WhatsApp review call, save feedback, and mark the review complete.
 - Student/parent-readable feedback, mobile navigation, real admin statistics, student records, and protected admin settings.
 
-## Phase 1 — final curriculum and self-learning quizzes
+## Phases 1–3 — implemented school operations
 
-- Import the final workbook lesson notes, questions, correct answers, and teaching explanations.
-- Show verified correct answers and explanations after submission once Benjamin supplies the approved answer key.
-- Let students continue after reviewing corrections or retake the quiz.
-- Preserve every attempt while using the latest attempt for progress reporting.
-- Confirm that P3.5 and every other required lesson count toward track completion.
+- A curriculum audit reports missing lesson content, videos, question counts, teaching explanations, and incorrect WhatsApp-submission wording.
+- Verified quiz corrections, optional retakes, latest-attempt reporting, and in-app assignment gating are active.
+- Completion is calculated from the actual lessons in each track. Painting includes P3.5; welcome videos and free guides are excluded.
+- Full-track certificates, PDF storage, email delivery, dashboard download, and public verification are implemented.
+- Lesson, assignment, feedback, review-call, parent-summary, renewal, and failed-payment notification jobs are implemented with delivery logs and retries.
+- Structured review-call availability and booking are implemented inside the school.
+- Student and parent-readable progress and feedback history are implemented.
 
-## Phase 2 — certificate and track completion system
+## Certificate and track completion rules
 
 ### Completion rule
 
@@ -85,14 +87,9 @@ Checking assignments alone is insufficient because a student may submit their fi
 - `CERTIFICATE_BASE_URL=https://learn.beoarts.com/verify`
 - `CERTIFICATE_GENERATION_SECRET` for authenticated Edge Function to Next.js communication.
 
-## Phase 3 — school automation
+## Free student learning resources
 
-- Weekly lesson-unlock emails and WhatsApp notifications.
-- Assignment-due, missing-submission, submission-seen, feedback-ready, and review-call reminders.
-- Structured review-call scheduling; the current WhatsApp link is the lightweight first version.
-- Subscription renewal and failed-payment reminders.
-- Parent-readable progress summaries and feedback history.
-- Retry logs and an admin automation-status screen so failed messages are visible.
+- The Gen Z Artist's Social Guide is free to every authenticated Beo student and does not count toward certification.
 
 ## Phase 4 — progression and mentorship
 
@@ -100,16 +97,17 @@ Checking assignments alone is insufficient because a student may submit their fi
 - Completion/certificate status becomes one eligibility input.
 - Separate mentorship enrollment, content access, payment, and scheduling rules.
 
-## Phase 5 — assisted assignment review
+## Phase 5 — assignment-review shadow learning
 
-- Implement the dynamic, lesson-specific review system in [`AI_REVIEW_SPEC.md`](./AI_REVIEW_SPEC.md).
+- Implement the staged shadow-learning system in [`AI_SHADOW_LEARNING.md`](./AI_SHADOW_LEARNING.md) using the dynamic lesson rules in [`AI_REVIEW_SPEC.md`](./AI_REVIEW_SPEC.md).
 - On submission, load the lesson title, notes, assignment instructions, week number, track, and three quiz concepts from Supabase.
 - Select the exact Drawing or Painting criteria for that week; use the constant Discovery rubric for D1–D7.
 - Score only skills already taught by that point in the curriculum. Never penalise a student for a later technique.
 - Add a written-response field and database column for Discovery assignments; its rubric cannot work correctly with the current image-only submission.
 - Send the lesson context, selected rubric, written response where applicable, and submitted image to the configured vision-capable Claude model.
 - Store structured draft results: five criterion scores, child-friendly reasons, priority fix, positive callout, and review-call focus.
-- Show AI results only to Benjamin in the admin review panel. Benjamin edits/approves them before any feedback reaches the student or parent.
+- During the initial period Benjamin reviews manually while the model creates private shadow drafts and learns from repeated approved signals.
+- Show AI results only to Benjamin after the shadow system meets promotion thresholds. Benjamin edits/approves them before any feedback reaches the student or parent.
 - Keep manual review fully usable whenever the AI provider is unavailable.
 - Train or fine-tune only after enough Benjamin-approved examples exist.
 - Define student/parent consent, training-data boundaries, retention, deletion, privacy, model versioning, cost limits, and quality-control rules before activation.

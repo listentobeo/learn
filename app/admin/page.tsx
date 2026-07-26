@@ -4,6 +4,8 @@ import { AppShell } from "@/components/app-shell";
 import { StudentRecordsTable } from "@/components/student-records-table";
 import { getAdminDashboardData } from "@/lib/admin-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const data = await getAdminDashboardData();
   const attention = data.students.filter((student) => student.assignmentStatus === "Awaiting review");

@@ -12,8 +12,6 @@ export function LessonWork({
   instructions,
   initialAssignment,
   initialQuizCompleted,
-  whatsappNumber,
-  studentName,
 }: {
   questions: QuizQuestion[];
   lessonCode: string;
@@ -21,8 +19,6 @@ export function LessonWork({
   instructions: string;
   initialAssignment: AssignmentRecord | null;
   initialQuizCompleted: boolean;
-  whatsappNumber?: string;
-  studentName: string;
 }) {
   const [assignmentUnlocked, setAssignmentUnlocked] = useState(initialQuizCompleted || Boolean(initialAssignment));
 
@@ -39,8 +35,6 @@ export function LessonWork({
         lessonCode={lessonCode}
         instructions={instructions}
         initialAssignment={initialAssignment}
-        whatsappNumber={whatsappNumber}
-        studentName={studentName}
         quizCompleted={assignmentUnlocked}
       />
     </div>

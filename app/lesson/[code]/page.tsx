@@ -53,8 +53,6 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
           instructions={lesson.assignment_instructions}
           initialAssignment={assignment}
           initialQuizCompleted={quizCompleted}
-          whatsappNumber={process.env.BENJAMIN_WHATSAPP_NUMBER}
-          studentName={profile.name}
         />
       </div>
     </AppShell>

@@ -14,14 +14,7 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
 
 ## Production setup
 
-1. Create a Supabase project and run `supabase/schema.sql` in the SQL editor.
-   For an existing project created before quiz retakes, also run `supabase/migrations/20260724_enable_quiz_retakes.sql`.
-   For an existing project created before international pricing, also run `supabase/migrations/20260724_add_international_payments.sql`.
-   For an existing project created before secure profile settings, also run `supabase/migrations/20260724_secure_profile_updates.sql`.
-   For an existing project created before assignment feedback and welcome videos, also run `supabase/migrations/20260724_assignment_feedback_and_welcome_videos.sql`.
-   For an existing project created before live inline checkout, also run `supabase/migrations/20260724_paystack_inline_and_subscriptions.sql`.
-   To allow students to own and switch between multiple tracks, also run `supabase/migrations/20260724_multi_track_enrollments.sql`.
-   If `20260725_secure_quiz_feedback.sql` was already applied, run `supabase/migrations/20260726_rollback_secure_quiz_feedback.sql` to remove that answer-correction schema.
+1. Create a Supabase project and run `supabase/schema.sql` in the SQL editor, then run every file in `supabase/migrations` in filename order. Existing projects can run only migrations that have not already been applied.
 2. Run `supabase/seed_original_curriculum.sql` to load the 32 original lessons and all 96 ordered quiz questions.
 3. Add the environment variables from `.env.example`.
 4. In Paystack, set the webhook to `https://learn.beoarts.com/api/paystack/webhook`.
@@ -29,8 +22,11 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
    Guided monthly enrollment creates a three-payment NGN Paystack subscription automatically. Existing plan codes may optionally be supplied through the two `PAYSTACK_*_MONTHLY_PLAN_CODE_NGN` variables.
 5. Add each unlisted YouTube video ID, lesson notes, and assignment instructions in Supabase.
 6. Promote Benjamin’s profile to `admin` with the final SQL statement in the schema.
-7. Configure WhatsApp Cloud API variables, or Resend variables for the email fallback.
+7. Configure Resend and, optionally, WhatsApp Cloud API. Students choose their notification channels from Settings.
+8. Run `supabase/migrations/20260729_school_completion_and_operations.sql`.
+9. Deploy the `check-completion` and `school-automation` Supabase Edge Functions if Supabase Database Webhooks or Supabase scheduling will be used. The included Vercel cron is an alternative daily scheduler.
+10. Add `CERTIFICATE_GENERATION_SECRET`, `CERTIFICATE_BASE_URL`, and `CRON_SECRET`. Use long random secret values and use the same values in the matching Edge Function secrets.
 
-The future automation, certificates, mentorship, and workbook-driven quiz work are recorded in `docs/SCHOOL_ROADMAP.md`.
+The future mentorship and AI shadow-learning work are recorded in `docs/SCHOOL_ROADMAP.md`.
 
-Quiz answers are scored server-side, Paystack webhooks are signature-verified, private assignment uploads use signed URLs, and RLS isolates each student’s data.
+Quiz answers are scored server-side, Paystack webhooks are signature-verified, private assignment uploads use signed URLs, certificates require completion of a full track, and RLS isolates each student’s data.

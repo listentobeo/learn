@@ -5,6 +5,8 @@ import { getCurrentProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import type { Enrollment } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();

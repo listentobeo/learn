@@ -19,6 +19,11 @@ export type Profile = {
   enrollment_date: string | null;
   payment_status: "pending" | "active" | "past_due";
   role: "student" | "admin";
+  phone?: string | null;
+  parent_name?: string | null;
+  parent_email?: string | null;
+  email_notifications?: boolean;
+  whatsapp_notifications?: boolean;
 };
 
 export type Enrollment = {
@@ -56,4 +61,13 @@ export type TrackWelcomeVideo = {
   title: string;
   youtube_video_id: string | null;
   description: string;
+};
+
+export type Certificate = {
+  id: string;
+  student_id: string;
+  track: Track;
+  file_url: string;
+  certificate_code: string;
+  issued_at: string;
 };
