@@ -61,8 +61,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const supabase = await createClient();
   if (!supabase) return demoData();
 
-  const [{ data: profiles }, { data: quizzes }, { data: assignments }] = await Promise.all([
+  const [{ data: profiles }, { data: enrollments }, { data: quizzes }, { data: assignments }] = await Promise.all([
     supabase.from("profiles").select("id,name,email,track,enrollment_date,payment_status").eq("role", "student").order("name"),
+    supabase.from("enrollments").select("student_id,track,enrollment_date,payment_status").eq("payment_status", "active"),
     supabase.from("quiz_submissions").select("student_id,lesson_code,score,submitted_at").order("submitted_at", { ascending: false }),
     supabase.from("assignments").select("student_id,reviewed,submitted_at").order("submitted_at", { ascending: false }),
   ]);
@@ -84,24 +85,52 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     if (!latestAssignmentByStudent.has(assignment.student_id)) latestAssignmentByStudent.set(assignment.student_id, assignment);
   }
 
+  const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+  const activeEnrollmentByStudent = new Map<string, { track: Track; enrollment_date: string; payment_status: string }>();
+  for (const enrollment of enrollments || []) {
+    const primaryTrack = profileById.get(enrollment.student_id)?.track;
+    if (!activeEnrollmentByStudent.has(enrollment.student_id) || enrollment.track === primaryTrack) {
+      activeEnrollmentByStudent.set(
+        enrollment.student_id,
+        enrollment as { track: Track; enrollment_date: string; payment_status: string },
+      );
+    }
+  }
+
   const students: StudentRecord[] = (profiles || []).map((profile) => {
     const quiz = latestQuizByStudent.get(profile.id);
     const assignment = latestAssignmentByStudent.get(profile.id);
+    const enrollment = activeEnrollmentByStudent.get(profile.id);
+    const track = (enrollment?.track || profile.track) as Track;
     return {
       id: profile.id,
       name: profile.name,
       email: profile.email,
-      track: profile.track,
-      currentLesson: currentLesson(profile.track as Track, profile.enrollment_date, profile.payment_status, completedByStudent.get(profile.id) || new Set()),
+      track,
+      currentLesson: currentLesson(
+        track,
+        enrollment?.enrollment_date || profile.enrollment_date,
+        enrollment?.payment_status || profile.payment_status,
+        completedByStudent.get(profile.id) || new Set(),
+      ),
       lastQuizScore: quiz ? `${quiz.score}/3` : "—",
       assignmentStatus: assignment ? (assignment.reviewed ? "Reviewed" : "Awaiting review") : "No submission",
     };
   });
 
   const latestScores = [...latestAttemptByStudentLesson.values()];
+  const studentProfileIds = new Set((profiles || []).map((profile) => profile.id));
+  const activeStudentIds = new Set(
+    (enrollments || [])
+      .filter((enrollment) => studentProfileIds.has(enrollment.student_id))
+      .map((enrollment) => enrollment.student_id),
+  );
+  for (const profile of profiles || []) {
+    if (profile.payment_status === "active") activeStudentIds.add(profile.id);
+  }
   return {
     students,
-    activeStudents: (profiles || []).filter((profile) => profile.payment_status === "active").length,
+    activeStudents: activeStudentIds.size,
     awaitingReview: (assignments || []).filter((assignment) => !assignment.reviewed).length,
     completedReviews: (assignments || []).filter((assignment) => assignment.reviewed).length,
     averageQuizScore: latestScores.length ? Math.round((latestScores.reduce((sum, score) => sum + score, 0) / (latestScores.length * 3)) * 100) : null,

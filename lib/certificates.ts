@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderCertificate } from "@/lib/certificate-document";
 import { getTrackCompletion } from "@/lib/completion";
+import { resendSender } from "@/lib/email";
 import type { Track } from "@/lib/types";
 
 export type CertificateRecord = {
@@ -36,7 +37,7 @@ async function sendCertificateEmail(
     method: "POST",
     headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || "Beo School of Art <school@learn.beoarts.com>",
+      from: resendSender(),
       to: [profile.email],
       subject: `🎨 Your Beo School of Art Certificate is ready, ${firstName}`,
       html: `<p>Congratulations ${firstName},</p>

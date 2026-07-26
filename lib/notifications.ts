@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resendSender } from "@/lib/email";
 import type { Track } from "@/lib/types";
 
 type NotificationKind =
@@ -116,7 +117,7 @@ async function deliverEmail(job: Record<string, any>) {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || "Beo School of Art <school@learn.beoarts.com>",
+      from: resendSender(),
       to: [job.recipient],
       subject: job.subject || "An update from Beo School of Art",
       html: emailHtml(payload.name || "Artist", payload.message || "", payload.link),

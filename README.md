@@ -22,7 +22,7 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
    Guided monthly enrollment creates a three-payment NGN Paystack subscription automatically. Existing plan codes may optionally be supplied through the two `PAYSTACK_*_MONTHLY_PLAN_CODE_NGN` variables.
 5. Add each unlisted YouTube video ID, lesson notes, and assignment instructions in Supabase.
 6. Promote Benjamin’s profile to `admin` with the final SQL statement in the schema.
-7. Configure Resend and, optionally, WhatsApp Cloud API. Students choose their notification channels from Settings.
+7. Configure Resend and verify the `alerts.beoarts.com` sending domain. Set `RESEND_FROM_EMAIL` to `Beo School of Art <school@alerts.beoarts.com>`. Optionally configure WhatsApp Cloud API; students choose their notification channels from Settings.
 8. Run `supabase/migrations/20260729_school_completion_and_operations.sql`.
 9. Deploy the `check-completion` and `school-automation` Supabase Edge Functions if Supabase Database Webhooks or Supabase scheduling will be used. The included Vercel cron is an alternative daily scheduler.
 10. Add `CERTIFICATE_GENERATION_SECRET`, `CERTIFICATE_BASE_URL`, and `CRON_SECRET`. Use long random secret values and use the same values in the matching Edge Function secrets. The completion webhook itself does not award certificates: both the Edge Function and protected application endpoint independently verify full-track completion.
