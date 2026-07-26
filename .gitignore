@@ -7,3 +7,4 @@ node_modules.partial*
 *.tsbuildinfo
 .DS_Store
 tmp/
+output/

@@ -2,10 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { renderCertificate } from "../lib/certificate-document";
 
 async function main() {
-  const outputDirectory = new URL("../tmp/pdfs/", import.meta.url);
+  const outputDirectory = new URL("../output/pdf/", import.meta.url);
   await mkdir(outputDirectory, { recursive: true });
   const pdf = await renderCertificate({
-    studentName: "Amara Okafor",
+    studentName: "Benjamin Odeke",
     track: "Drawing",
     completionDate: "July 2026",
     certificateCode: "BEO-DRW-PREVIEW001",
