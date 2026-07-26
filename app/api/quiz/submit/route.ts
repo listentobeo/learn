@@ -15,22 +15,17 @@ export async function POST(request: Request) {
   const { lessonCode, answers } = parsed.data;
   if (!supabase) {
     const questions = demoQuestions(lessonCode);
-    if (questions.some((question) => !answers[question.id])) return NextResponse.json({ error: "Answer every quiz question before submitting" }, { status: 400 });
-    const review = questions.map((question) => ({
-      questionId: question.id,
-      selectedAnswer: answers[question.id],
-      correctAnswer: question.correct_answer,
-      isCorrect: answers[question.id] === question.correct_answer,
-    }));
-    return NextResponse.json({ score: review.filter((item) => item.isCorrect).length, attempt: 1, review, demo: true });
+    const score = questions.reduce((total, q) => total + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
+    return NextResponse.json({ score, demo: true });
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { data, error } = await supabase.rpc("submit_lesson_quiz", {
-    p_lesson_code: lessonCode,
-    p_answers: answers,
-  });
+  const { data: questions } = await supabase.from("quiz_questions").select("id,correct_answer").eq("lesson_code", lessonCode);
+  const score = (questions || []).reduce((total, q) => total + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
+  const { count } = await supabase.from("quiz_submissions").select("id", { count: "exact", head: true }).eq("student_id", user.id).eq("lesson_code", lessonCode);
+  const attempt = (count || 0) + 1;
+  const { error } = await supabase.from("quiz_submissions").insert({ student_id: user.id, lesson_code: lessonCode, answers, score, attempt_number: attempt });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json(data);
+  return NextResponse.json({ score, attempt });
 }
