@@ -37,17 +37,22 @@ export function Quiz({
   async function submit() {
     if (!complete) return toast.error("Choose an answer for each question.");
     setSubmitting(true);
-    const response = await fetch("/api/quiz/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lessonCode, answers }),
-    });
-    const result = await response.json();
-    setSubmitting(false);
-    if (!response.ok) return toast.error(result.error || "We could not submit your quiz. Please try again.");
-    setScore(result.score);
-    setAttempt(result.attempt ?? attempt);
-    setReview(result.review || []);
+    try {
+      const response = await fetch("/api/quiz/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonCode, answers }),
+      });
+      const result = await response.json();
+      if (!response.ok) return toast.error(result.error || "We could not submit your quiz. Please try again.");
+      setScore(result.score);
+      setAttempt(result.attempt ?? attempt);
+      setReview(result.review || []);
+    } catch {
+      toast.error("Your connection changed while submitting. Check your network and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function retake() {

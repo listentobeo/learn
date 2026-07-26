@@ -1,6 +1,3 @@
-alter table public.quiz_questions
-  add column if not exists correct_answer_text text not null default '';
-
 create or replace function public.submit_lesson_quiz(p_lesson_code text, p_answers jsonb)
 returns jsonb
 language plpgsql
@@ -70,7 +67,3 @@ $$;
 
 revoke all on function public.submit_lesson_quiz(text, jsonb) from public;
 grant execute on function public.submit_lesson_quiz(text, jsonb) to authenticated;
-
-revoke select on public.quiz_questions from public, anon, authenticated;
-grant select (id, lesson_code, question_text, option_a, option_b, option_c, option_d, question_order)
-  on public.quiz_questions to authenticated;
