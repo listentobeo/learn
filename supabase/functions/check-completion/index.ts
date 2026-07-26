@@ -10,22 +10,12 @@ type Payload = {
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const configuredWebhookSecret = Deno.env.get("COMPLETION_WEBHOOK_SECRET");
-  const suppliedWebhookSecret = request.headers.get("x-webhook-secret");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const bearerToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const apiKey = request.headers.get("apikey");
-  const authorisedByWebhookSecret = Boolean(
-    configuredWebhookSecret && suppliedWebhookSecret === configuredWebhookSecret,
-  );
-  const authorisedByServiceRole = Boolean(
-    serviceRoleKey && (bearerToken === serviceRoleKey || apiKey === serviceRoleKey),
-  );
-  if (!authorisedByWebhookSecret && !authorisedByServiceRole) {
-    return new Response("Completion webhook authentication failed", { status: 401 });
-  }
 
   const payload = await request.json() as Payload;
+  if (payload.table && payload.table !== "assignments") {
+    return new Response("Unsupported webhook table", { status: 400 });
+  }
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const schoolUrl = Deno.env.get("SCHOOL_APP_URL") || "https://learn.beoarts.com";
   const generationSecret = Deno.env.get("CERTIFICATE_GENERATION_SECRET");

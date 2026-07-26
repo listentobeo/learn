@@ -25,7 +25,7 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
 7. Configure Resend and, optionally, WhatsApp Cloud API. Students choose their notification channels from Settings.
 8. Run `supabase/migrations/20260729_school_completion_and_operations.sql`.
 9. Deploy the `check-completion` and `school-automation` Supabase Edge Functions if Supabase Database Webhooks or Supabase scheduling will be used. The included Vercel cron is an alternative daily scheduler.
-10. Add `CERTIFICATE_GENERATION_SECRET`, `CERTIFICATE_BASE_URL`, and `CRON_SECRET`. Use long random secret values and use the same values in the matching Edge Function secrets.
+10. Add `CERTIFICATE_GENERATION_SECRET`, `CERTIFICATE_BASE_URL`, and `CRON_SECRET`. Use long random secret values and use the same values in the matching Edge Function secrets. The completion webhook itself does not award certificates: both the Edge Function and protected application endpoint independently verify full-track completion.
 
 The future mentorship and AI shadow-learning work are recorded in `docs/SCHOOL_ROADMAP.md`.
 
