@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { resendSender } from "@/lib/email";
+import { resendSender, supportEmail } from "@/lib/email";
 import type { Track } from "@/lib/types";
 
 type NotificationKind =
+  | "welcome"
   | "enrollment_confirmed"
   | "lesson_unlocked"
   | "assignment_due"
@@ -48,6 +49,7 @@ function emailHtml(name: string, message: string, link?: string) {
   return `<div style="background:#0A0E17;color:#F6F1E7;padding:30px;font-family:Arial,sans-serif">
     <p>Hello ${safeName},</p><p style="line-height:1.7">${safeMessage}</p>${action}
     <p style="color:#C9A84C">— Benjamin Odeke<br><span style="color:#9CA3AF">Beo School of Art</span></p>
+    <p style="color:#9CA3AF;font-size:13px">Questions or account help: <a href="mailto:${supportEmail}" style="color:#C9A84C">${supportEmail}</a></p>
   </div>`;
 }
 
@@ -118,6 +120,7 @@ async function deliverEmail(job: Record<string, any>) {
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: resendSender(),
+      reply_to: supportEmail,
       to: [job.recipient],
       subject: job.subject || "An update from Beo School of Art",
       html: emailHtml(payload.name || "Artist", payload.message || "", payload.link),

@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderCertificate } from "@/lib/certificate-document";
 import { getTrackCompletion } from "@/lib/completion";
-import { resendSender } from "@/lib/email";
+import { resendSender, supportEmail } from "@/lib/email";
 import type { Track } from "@/lib/types";
 
 export type CertificateRecord = {
@@ -38,6 +38,7 @@ async function sendCertificateEmail(
     headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: resendSender(),
+      reply_to: supportEmail,
       to: [profile.email],
       subject: `🎨 Your Beo School of Art Certificate is ready, ${firstName}`,
       html: `<p>Congratulations ${firstName},</p>
@@ -45,7 +46,8 @@ async function sendCertificateEmail(
         <p>Your certificate is attached and is also available from your course dashboard.</p>
         <p><strong>Certificate ID:</strong> ${certificate.certificate_code}</p>
         <p>This has been a real journey. Well done.</p>
-        <p>— Benjamin Odeke<br>Founder, Beo Art Studio<br><a href="https://beoarts.com">beoarts.com</a></p>`,
+        <p>— Benjamin Odeke<br>Founder, Beo Art Studio<br><a href="https://beoarts.com">beoarts.com</a></p>
+        <p>Questions or account help: <a href="mailto:${supportEmail}">${supportEmail}</a></p>`,
       attachments: [{
         filename: `Beo-School-${certificate.track}-${profile.name.replace(/[^a-z0-9]+/gi, "-")}.pdf`,
         content: Buffer.from(pdf).toString("base64"),

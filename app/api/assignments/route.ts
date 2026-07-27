@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resendSender } from "@/lib/email";
+import { resendSender, supportEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 
 const statusFields = "id,lesson_code,submitted_at,seen_at,reviewed,reviewed_at,feedback,feedback_at";
@@ -34,7 +34,7 @@ async function notifyBenjamin(studentName: string, lessonCode: string) {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: resendSender(), to: email, subject: `Assignment submitted · ${lessonCode}`, html: `<p>${studentName} submitted work for ${lessonCode}. Open the Beo School admin dashboard to review it.</p>` }),
+      body: JSON.stringify({ from: resendSender(), reply_to: supportEmail, to: email, subject: `Assignment submitted · ${lessonCode}`, html: `<p>${studentName} submitted work for ${lessonCode}. Open the Beo School admin dashboard to review it.</p>` }),
     });
     if (!response.ok) throw new Error(`Resend returned ${response.status}: ${await response.text()}`);
     return;

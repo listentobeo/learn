@@ -37,6 +37,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         options: { data: { name, track } },
       });
       if (error) { toast.error(error.message); setLoading(false); return; }
+      await fetch("/api/auth/welcome", { method: "POST" }).catch(() => undefined);
       toast.success("Account created. Now choose your payment plan.");
       router.push(`/checkout?track=${track}`);
     }

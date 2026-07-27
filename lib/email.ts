@@ -1,4 +1,5 @@
 const defaultSender = "Beo School of Art <school@alerts.beoarts.com>";
+export const supportEmail = "support@beoarts.com";
 
 export function resendSender() {
   const configured = process.env.RESEND_FROM_EMAIL?.trim();
