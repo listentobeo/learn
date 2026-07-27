@@ -13,7 +13,7 @@ export function WelcomeVideo({ video }: { video: TrackWelcomeVideo }) {
       <div className="welcome-video">
         {video.youtube_video_id ? (
           <iframe
-            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.youtube_video_id)}`}
+            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.youtube_video_id)}?rel=0&playsinline=1`}
             title={video.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen

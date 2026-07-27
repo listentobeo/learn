@@ -91,6 +91,10 @@ Checking assignments alone is insufficient because a student may submit their fi
 
 - The Gen Z Artist's Social Guide is free to every authenticated Beo student and does not count toward certification.
 
+## Deferred
+
+- A separate parent login and portal are not part of the current build. Parent communication remains limited to the existing optional email summaries and notifications.
+
 ## Phase 4 — progression and mentorship
 
 - Locked mentorship path available only to eligible graduates or invited students.

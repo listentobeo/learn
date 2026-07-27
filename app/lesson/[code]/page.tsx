@@ -44,7 +44,7 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
         <Link className="back-link" href={`/dashboard?track=${lesson.track}`}><ArrowLeft size={15} /> Back to lessons</Link>
         <div className="lesson-heading"><div><span className="lesson-code">{lesson.lesson_code} · Week {lesson.week_number}</span><h1>{lesson.title}</h1></div><span className="pill">Lesson available</span></div>
         <div className="video">
-          {video ? <iframe src={`https://www.youtube-nocookie.com/embed/${video.id}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <div className="video-placeholder"><div><PlayCircle size={44} /><strong>Lesson video</strong><br /><span>Connect a YouTube video ID in Supabase to play this lesson.</span></div></div>}
+          {video ? <iframe src={`https://www.youtube-nocookie.com/embed/${video.id}?rel=0&playsinline=1`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <div className="video-placeholder"><div><PlayCircle size={44} /><strong>Lesson video</strong><br /><span>Connect a YouTube video ID in Supabase to play this lesson.</span></div></div>}
         </div>
         <LessonWork
           questions={questions.length ? questions : demoQuestions(code)}
