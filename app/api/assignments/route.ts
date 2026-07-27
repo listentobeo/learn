@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resendSender } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 
 const statusFields = "id,lesson_code,submitted_at,seen_at,reviewed,reviewed_at,feedback,feedback_at";
@@ -20,22 +21,25 @@ async function notifyBenjamin(studentName: string, lessonCode: string) {
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const recipient = process.env.BENJAMIN_WHATSAPP_NUMBER;
   if (token && phoneId && recipient) {
-    await fetch(`https://graph.facebook.com/v22.0/${phoneId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v22.0/${phoneId}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ messaging_product: "whatsapp", to: recipient, type: "text", text: { body: `New Beo assignment: ${studentName} submitted ${lessonCode}. Open the admin dashboard to review.` } }),
     });
-    return;
+    if (response.ok) return;
   }
   const resendKey = process.env.RESEND_API_KEY;
-  const email = process.env.BENJAMIN_EMAIL;
+  const email = process.env.BENJAMIN_EMAIL || "admin@beoarts.com";
   if (resendKey && email) {
-    await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "Beo School <notifications@learn.beoarts.com>", to: email, subject: `Assignment submitted · ${lessonCode}`, html: `<p>${studentName} submitted work for ${lessonCode}.</p>` }),
+      body: JSON.stringify({ from: resendSender(), to: email, subject: `Assignment submitted · ${lessonCode}`, html: `<p>${studentName} submitted work for ${lessonCode}. Open the Beo School admin dashboard to review it.</p>` }),
     });
+    if (!response.ok) throw new Error(`Resend returned ${response.status}: ${await response.text()}`);
+    return;
   }
+  throw new Error("No assignment notification channel is configured");
 }
 
 export async function POST(request: Request) {
@@ -67,7 +71,8 @@ export async function POST(request: Request) {
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
   try {
     await notifyBenjamin(profile?.name || user.email || "A student", lessonCode);
-  } catch {
+  } catch (notificationError) {
+    console.error("Assignment notification failed", notificationError);
     // The submission remains valid even if the external notification provider is unavailable.
   }
   return NextResponse.json({ assignment });
