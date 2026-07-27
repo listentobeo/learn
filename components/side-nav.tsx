@@ -23,9 +23,9 @@ export function SideNav({ admin, mobile = false }: { admin: boolean; mobile?: bo
     <nav className={mobile ? "mobile-nav" : "side-nav"} aria-label={mobile ? "Mobile navigation" : "Main navigation"}>
       {links.map(({ href, label, icon: Icon }, index) => {
         const active = pathname === href || (href === "/admin/students" && pathname.startsWith("/admin/student/"));
-        return <Link className={`side-link${active ? " active" : ""}`} href={href} key={`${href}-${label}`}><Icon size={17} /> {label}</Link>;
+        return <Link className={`side-link${active ? " active" : ""}`} href={href} key={`${href}-${label}`} title={!mobile ? label : undefined}><Icon size={17} /><span>{label}</span></Link>;
       })}
-      {!mobile && <a className="side-link" href="mailto:support@beoarts.com"><MessageCircle size={17} /> Support</a>}
+      {!mobile && <a className="side-link" href="mailto:support@beoarts.com" title="Support"><MessageCircle size={17} /><span>Support</span></a>}
     </nav>
   );
 }
