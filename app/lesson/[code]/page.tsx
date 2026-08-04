@@ -5,15 +5,18 @@ import { AppShell } from "@/components/app-shell";
 import { LessonWork } from "@/components/lesson-work";
 import { demoProfile, demoQuestions, lessonsFor } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
-import type { AssignmentRecord, Lesson, Profile, QuizQuestion } from "@/lib/types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getStudioChallenge } from "@/lib/gamification";
+import type { AssignmentRecord, Lesson, Profile, QuizQuestion, StudioChallenge } from "@/lib/types";
 import { isLessonUnlocked } from "@/lib/utils";
 import { getYouTubeVideo } from "@/lib/youtube";
 
-async function lessonData(code: string): Promise<{ profile: Profile; lesson: Lesson; questions: QuizQuestion[]; assignment: AssignmentRecord | null; quizCompleted: boolean } | null> {
+async function lessonData(code: string): Promise<{ profile: Profile; lesson: Lesson; questions: QuizQuestion[]; assignment: AssignmentRecord | null; quizCompleted: boolean; challenge: StudioChallenge | null; demo: boolean } | null> {
   const supabase = await createClient();
   if (!supabase) {
     const lesson = lessonsFor(demoProfile.track).find((item) => item.lesson_code === code);
-    return lesson ? { profile: demoProfile, lesson, questions: demoQuestions(code), assignment: null, quizCompleted: false } : null;
+    const questions = demoQuestions(code);
+    return lesson ? { profile: demoProfile, lesson, questions, assignment: null, quizCompleted: false, demo: true, challenge: { id: "00000000-0000-4000-8000-000000000001", lesson_code: code, challenge_type: "quick_choice", title: `${code} Studio Challenge`, prompt: questions[0]?.question_text || "Choose the strongest observation.", version: 1, config: { options: (["a", "b", "c", "d"] as const).map((id) => ({ id, label: questions[0]?.[`option_${id}`] || id.toUpperCase() })) }, reward_xp: 20, reward_brushes: 5, is_mastery: false, completed: false } } : null;
   }
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -28,7 +31,9 @@ async function lessonData(code: string): Promise<{ profile: Profile; lesson: Les
   const { data: enrollment } = await supabase.from("enrollments").select("enrollment_date,payment_status").eq("student_id", user.id).eq("track", lesson.track).eq("payment_status", "active").maybeSingle();
   if (!enrollment) return null;
   const activeProfile = { ...profile, track: lesson.track, enrollment_date: enrollment.enrollment_date, payment_status: enrollment.payment_status } as Profile;
-  return { profile: activeProfile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[], assignment: assignment as AssignmentRecord | null, quizCompleted: Boolean(quizAttempts) };
+  const challengeClient = createAdminClient();
+  const challenge = challengeClient ? await getStudioChallenge(challengeClient, user.id, code) : null;
+  return { profile: activeProfile, lesson: lesson as Lesson, questions: (questions || []) as QuizQuestion[], assignment: assignment as AssignmentRecord | null, quizCompleted: Boolean(quizAttempts), challenge, demo: false };
 }
 
 export default async function LessonPage({ params }: { params: Promise<{ code: string }> }) {
@@ -36,7 +41,7 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
   const data = await lessonData(code);
   if (!data) notFound();
   if (!isLessonUnlocked(data.lesson, data.profile)) notFound();
-  const { profile, lesson, questions, assignment, quizCompleted } = data;
+  const { profile, lesson, questions, assignment, quizCompleted, challenge, demo } = data;
   const video = await getYouTubeVideo(lesson.youtube_video_id);
   return (
     <AppShell name={profile.name} track={profile.track}>
@@ -53,6 +58,8 @@ export default async function LessonPage({ params }: { params: Promise<{ code: s
           instructions={lesson.assignment_instructions}
           initialAssignment={assignment}
           initialQuizCompleted={quizCompleted}
+          challenge={challenge}
+          demo={demo}
         />
       </div>
     </AppShell>

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       isCorrect: answers[question.id] === question.correct_answer,
       explanation: "",
     }));
-    return NextResponse.json({ score: review.filter((item) => item.isCorrect).length, attempt: 1, review, demo: true });
+    return NextResponse.json({ score: review.filter((item) => item.isCorrect).length, attempt: 1, review, gameReward: { xp: 20, brushes: 5 }, demo: true });
   }
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -47,5 +47,6 @@ export async function POST(request: Request) {
       // The database completion queue remains available for the scheduled retry.
     }
   });
-  return NextResponse.json(data);
+  const result = data as { attempt?: number };
+  return NextResponse.json({ ...result, gameReward: result.attempt === 1 ? { xp: 20, brushes: 5 } : null });
 }

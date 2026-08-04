@@ -26,7 +26,10 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
 8. Run `supabase/migrations/20260729_school_completion_and_operations.sql`.
 9. Deploy the `check-completion` and `school-automation` Supabase Edge Functions if Supabase Database Webhooks or Supabase scheduling will be used. The included Vercel cron is an alternative daily scheduler.
 10. Add `CERTIFICATE_GENERATION_SECRET`, `CERTIFICATE_BASE_URL`, and `CRON_SECRET`. Use long random secret values and use the same values in the matching Edge Function secrets. The completion webhook itself does not award certificates: both the Edge Function and protected application endpoint independently verify full-track completion.
+11. Run `supabase/migrations/20260804_gamified_personal_studio.sql` to launch Studio XP, Gold Brushes, lesson challenges, Personal Studios, the Reward Shop, achievements, historical backfill and Benjamin's game controls. The migration is safe to apply after the curriculum is already seeded; fresh projects also create challenges as quiz questions are inserted.
 
 The future mentorship and AI shadow-learning work are recorded in `docs/SCHOOL_ROADMAP.md`.
+
+Gamification deployment and verification steps are in `docs/GAMIFICATION_DEPLOYMENT.md`.
 
 Quiz answers are scored server-side, Paystack webhooks are signature-verified, private assignment uploads use signed URLs, certificates require completion of a full track, and RLS isolates each student’s data.

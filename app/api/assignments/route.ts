@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please upload an image under 10 MB" }, { status: 400 });
   }
   const supabase = await createClient();
-  if (!supabase) return NextResponse.json({ assignment: { id: "demo", lesson_code: lessonCode, submitted_at: new Date().toISOString(), seen_at: null, reviewed: false, reviewed_at: null, feedback: null, feedback_at: null }, demo: true });
+  if (!supabase) return NextResponse.json({ assignment: { id: "demo", lesson_code: lessonCode, submitted_at: new Date().toISOString(), seen_at: null, reviewed: false, reviewed_at: null, feedback: null, feedback_at: null }, gameReward: { xp: 40, brushes: 10 }, demo: true });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { count: quizAttempts, error: quizError } = await supabase
@@ -75,5 +75,5 @@ export async function POST(request: Request) {
     console.error("Assignment notification failed", notificationError);
     // The submission remains valid even if the external notification provider is unavailable.
   }
-  return NextResponse.json({ assignment });
+  return NextResponse.json({ assignment, gameReward: { xp: 40, brushes: 10 } });
 }

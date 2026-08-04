@@ -1,11 +1,12 @@
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Coins, Flame, Frame, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CertificateCard } from "@/components/certificate-card";
 import { WelcomeVideo } from "@/components/welcome-video";
 import { demoProfile, lessonsFor } from "@/lib/demo-data";
+import { demoGameProfile, fallbackArtistLevels, getGamificationSummary, levelProgress } from "@/lib/gamification";
 import { createClient } from "@/lib/supabase/server";
-import type { Certificate, Enrollment, Lesson, Profile, Track, TrackWelcomeVideo } from "@/lib/types";
+import type { ArtistLevel, Certificate, Enrollment, GamificationProfile, Lesson, Profile, Track, TrackWelcomeVideo } from "@/lib/types";
 import { formatDate, isLessonUnlocked } from "@/lib/utils";
 
 function defaultWelcome(profile: Profile): TrackWelcomeVideo {
@@ -17,16 +18,19 @@ function defaultWelcome(profile: Profile): TrackWelcomeVideo {
   };
 }
 
-async function dashboardData(requestedTrack?: string): Promise<{ profile: Profile; lessons: Lesson[]; welcomeVideo: TrackWelcomeVideo; enrollments: Enrollment[]; certificate: Certificate | null; completedLessonCodes: string[] }> {
+type DashboardData = { profile: Profile; lessons: Lesson[]; welcomeVideo: TrackWelcomeVideo; enrollments: Enrollment[]; certificate: Certificate | null; completedLessonCodes: string[]; gameProfile: GamificationProfile; levels: ArtistLevel[] };
+
+async function dashboardData(requestedTrack?: string): Promise<DashboardData> {
   const supabase = await createClient();
-  if (!supabase) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [{ student_id: demoProfile.id, track: demoProfile.track, enrollment_date: demoProfile.enrollment_date!, payment_status: "active" }], certificate: null, completedLessonCodes: [] };
+  if (!supabase) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [{ student_id: demoProfile.id, track: demoProfile.track, enrollment_date: demoProfile.enrollment_date!, payment_status: "active" }], certificate: null, completedLessonCodes: [], gameProfile: demoGameProfile, levels: fallbackArtistLevels };
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [], certificate: null, completedLessonCodes: [] };
-  const [{ data: profile }, { data: enrollmentRows }] = await Promise.all([
+  if (!user) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [], certificate: null, completedLessonCodes: [], gameProfile: demoGameProfile, levels: fallbackArtistLevels };
+  const [{ data: profile }, { data: enrollmentRows }, gameSummary] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("enrollments").select("student_id,track,enrollment_date,payment_status").eq("student_id", user.id).eq("payment_status", "active").order("enrollment_date"),
+    getGamificationSummary(supabase, user.id),
   ]);
-  if (!profile) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [], certificate: null, completedLessonCodes: [] };
+  if (!profile) return { profile: demoProfile, lessons: lessonsFor(demoProfile.track), welcomeVideo: defaultWelcome(demoProfile), enrollments: [], certificate: null, completedLessonCodes: [], gameProfile: gameSummary.profile, levels: gameSummary.levels };
   const enrollments = (enrollmentRows || []) as Enrollment[];
   const requested = ["Drawing", "Painting", "Discovery"].includes(requestedTrack || "") ? requestedTrack as Track : null;
   const selected = enrollments.find((item) => item.track === requested)
@@ -49,15 +53,18 @@ async function dashboardData(requestedTrack?: string): Promise<{ profile: Profil
     enrollments,
     certificate: certificate as Certificate | null,
     completedLessonCodes: (lessons || []).map((lesson) => lesson.lesson_code).filter((code) => quizCodes.has(code) && reviewedCodes.has(code)),
+    gameProfile: gameSummary.profile,
+    levels: gameSummary.levels,
   };
 }
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ track?: string }> }) {
   const { track } = await searchParams;
-  const { profile, lessons, welcomeVideo, enrollments, certificate, completedLessonCodes } = await dashboardData(track);
+  const { profile, lessons, welcomeVideo, enrollments, certificate, completedLessonCodes, gameProfile, levels } = await dashboardData(track);
   const unlocked = lessons.filter((lesson) => isLessonUnlocked(lesson, profile));
   const current = unlocked.at(-1);
   const progress = lessons.length ? Math.round((completedLessonCodes.length / lessons.length) * 100) : 0;
+  const artistLevel = levelProgress(gameProfile, levels);
 
   return (
     <AppShell name={profile.name} track={profile.track}>
@@ -66,6 +73,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <span className="pill">● Enrollment active</span>
       </div>
       {certificate && <CertificateCard certificate={certificate} />}
+      <section className="dashboard-game-strip"><div className="dashboard-level"><span>{gameProfile.current_level}</span><div><small>{artistLevel.current.title}</small><strong>{artistLevel.next ? `${artistLevel.next.min_xp - gameProfile.lifetime_xp} XP to level ${artistLevel.next.level}` : "Highest level reached"}</strong></div></div><div className="dashboard-mini-xp"><span style={{ width: `${artistLevel.percentage}%` }} /></div><div className="dashboard-rewards"><span><Sparkles size={15} /> {gameProfile.lifetime_xp} XP</span><span><Coins size={15} /> {gameProfile.gold_brush_balance}</span><span><Flame size={15} /> {gameProfile.current_streak}</span></div><Link href="/studio"><Frame size={15} /> Personal Studio</Link></section>
       <section className="progress-card">
         <div><h2>{profile.track}{profile.track === "Discovery" ? "" : " Guided"}</h2><p>Enrolled {formatDate(profile.enrollment_date)} · {completedLessonCodes.length} of {lessons.length} lesson reviews complete · Current lesson {current?.lesson_code || "—"}</p></div>
         <span className="progress-value">{progress}%</span>

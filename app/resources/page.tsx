@@ -18,9 +18,17 @@ export default async function ResourcesPage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
   let enrollments: Enrollment[] = [];
+  let unlockedResources: Array<{ item_key: string; name: string; description: string }> = [];
   if (supabase && profile.id !== "demo-student") {
-    const { data } = await supabase.from("enrollments").select("student_id,track,enrollment_date,payment_status").eq("student_id", profile.id);
+    const [{ data }, { data: inventory }] = await Promise.all([
+      supabase.from("enrollments").select("student_id,track,enrollment_date,payment_status").eq("student_id", profile.id),
+      supabase.from("student_inventory").select("item:studio_catalog_items(item_key,name,description,category)").eq("student_id", profile.id),
+    ]);
     enrollments = (data || []) as Enrollment[];
+    unlockedResources = (inventory || []).map((row) => {
+      const item = row.item as unknown as { item_key: string; name: string; description: string; category: string } | { item_key: string; name: string; description: string; category: string }[];
+      return Array.isArray(item) ? item[0] : item;
+    }).filter((item) => item?.category === "resource");
   } else {
     enrollments = [{ student_id: profile.id, track: profile.track, enrollment_date: profile.enrollment_date!, payment_status: profile.payment_status }];
   }
@@ -54,6 +62,7 @@ export default async function ResourcesPage() {
           <Link href="/guides/social-media">Open the guide <ArrowRight size={14} /></Link>
         </article>
       </section>
+      {unlockedResources.length > 0 && <section className="unlocked-practice-library"><div className="content-title"><h2>Unlocked practice packs</h2><span>Bought with Gold Brushes · yours to keep</span></div><div className="resource-grid">{unlockedResources.map((item) => <article className="resource-card reward-resource" id={item.item_key} key={item.item_key}><Sparkles size={22} /><span className="resource-access enrolled">Studio reward</span><h2>{item.name}</h2><p>{item.description}</p>{item.item_key === "portrait-prompts" ? <ol><li>Portrait using only shadow shapes</li><li>Three-expression self portrait</li><li>Profile drawn without outlines</li><li>Portrait from memory, then observation</li></ol> : item.item_key === "object-reference-pack" ? <ol><li>Cup: ellipse and centre line</li><li>Shoe: block in the largest masses</li><li>Fruit: five-value light study</li><li>Keys: overlap and negative space</li></ol> : <ol><li>Warm limited palette</li><li>Cool limited palette</li><li>Complementary contrast</li><li>One colour plus white study</li></ol>}</article>)}</div></section>}
       <section className="surface" id="materials" style={{ marginTop: 22 }}>
         <div className="eyebrow">Your current studio setup</div>
         <h2 style={{ marginTop: 20 }}>{profile.track} materials</h2>

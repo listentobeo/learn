@@ -93,7 +93,7 @@ Checking assignments alone is insufficient because a student may submit their fi
 
 ## Phase 4 — gamified Studio Journey
 
-- Build the private Personal Studio, Studio XP, Gold Brushes, framed assignment wall, Reward Shop, lesson challenges, correction rounds, badges and weekly practice rhythm described in [`GAMIFICATION_BUILD_PLAN.md`](./GAMIFICATION_BUILD_PLAN.md).
+- Completed for deployment: the private Personal Studio, Studio XP, Gold Brushes, framed assignment wall, Reward Shop, lesson challenges, correction rounds, badges and weekly practice rhythm described in [`GAMIFICATION_BUILD_PLAN.md`](./GAMIFICATION_BUILD_PLAN.md).
 - Gamification remains a learning and presentation layer. It does not change payment, lesson drip or full-track certificate requirements.
 
 ## Deferred

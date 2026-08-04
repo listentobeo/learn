@@ -1,5 +1,7 @@
 # Beo School of Art gamification build plan
 
+> Deployment candidate completed 4 August 2026. The implemented release includes the trusted reward ledger, historical backfill, dashboard economy strip, My Studio Journey, private Personal Studio, frames/themes/decor, Reward Shop, usable practice packs, lesson challenges with correction rounds, achievement cabinet, weekly rhythm, admin economy controls and a feature switch. See `GAMIFICATION_DEPLOYMENT.md` for launch steps.
+
 ## Goal
 
 Build a mobile-first learning game that makes students look forward to each lesson while keeping every reward tied to real artistic progress.
@@ -394,4 +396,3 @@ The gamification goal is complete only when:
 - Benjamin can manage the system without routine manual awards;
 - lesson drip, payments, feedback and certificate completion remain unchanged;
 - automated tests and a complete student journey pass for Drawing, Painting and Discovery.
-

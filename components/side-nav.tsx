@@ -1,6 +1,6 @@
 "use client";
 
-import { BellRing, BookOpen, CalendarClock, ChartNoAxesColumn, LayoutGrid, MessageCircle, Settings } from "lucide-react";
+import { BellRing, BookOpen, CalendarClock, ChartNoAxesColumn, Gamepad2, LayoutGrid, MessageCircle, Palette, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,10 +11,12 @@ export function SideNav({ admin, mobile = false }: { admin: boolean; mobile?: bo
     { href: "/admin/students", label: "Student records", icon: BookOpen },
     { href: "/admin/reviews", label: "Review calls", icon: CalendarClock },
     { href: "/admin/automations", label: "Automations", icon: BellRing },
+    { href: "/admin/gamification", label: "Game system", icon: Gamepad2 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ] : [
     { href: "/dashboard", label: "My course", icon: LayoutGrid },
-    { href: "/progress", label: "Progress", icon: ChartNoAxesColumn },
+    { href: "/progress", label: "Journey", icon: ChartNoAxesColumn },
+    { href: "/studio", label: "My studio", icon: Palette },
     { href: "/resources", label: "Resources", icon: BookOpen },
     { href: "/reviews", label: "Review calls", icon: CalendarClock },
     { href: "/settings", label: "Settings", icon: Settings },

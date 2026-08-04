@@ -71,3 +71,61 @@ export type Certificate = {
   certificate_code: string;
   issued_at: string;
 };
+
+export type ArtistLevel = {
+  level: number;
+  title: string;
+  min_xp: number;
+};
+
+export type GamificationProfile = {
+  student_id: string;
+  lifetime_xp: number;
+  gold_brush_balance: number;
+  current_level: number;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_on: string | null;
+};
+
+export type StudioCatalogItem = {
+  id: string;
+  item_key: string;
+  category: "frame" | "theme" | "decor" | "resource" | "challenge";
+  name: string;
+  description: string;
+  price: number;
+  minimum_level: number;
+  visual_config: Record<string, string>;
+  active: boolean;
+  sort_order: number;
+};
+
+export type StudentAchievement = {
+  id: string;
+  awarded_at: string;
+  achievement: {
+    achievement_key: string;
+    name: string;
+    description: string;
+    icon_key: string;
+  };
+};
+
+export type StudioChallenge = {
+  id: string;
+  lesson_code: string;
+  challenge_type: "quick_choice" | "sequence" | "sort_match" | "value_order";
+  title: string;
+  prompt: string;
+  version: number;
+  config: {
+    options?: Array<{ id: string; label: string }>;
+    items?: Array<{ id: string; label: string }>;
+    targets?: Array<{ id: string; label: string }>;
+  };
+  reward_xp: number;
+  reward_brushes: number;
+  is_mastery: boolean;
+  completed: boolean;
+};

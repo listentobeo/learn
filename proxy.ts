@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
   if (!user && path.startsWith("/admin") && !adminLogin) {
     return redirect("/admin/login");
   }
-  if (!user && (path.startsWith("/dashboard") || path.startsWith("/lesson") || path.startsWith("/resources") || path.startsWith("/settings") || path.startsWith("/progress") || path.startsWith("/reviews") || path.startsWith("/guides"))) {
+  if (!user && (path.startsWith("/dashboard") || path.startsWith("/lesson") || path.startsWith("/resources") || path.startsWith("/settings") || path.startsWith("/progress") || path.startsWith("/studio") || path.startsWith("/reviews") || path.startsWith("/guides"))) {
     return redirect("/login");
   }
   if (user && path.startsWith("/admin")) {
@@ -52,4 +52,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/", "/login", "/signup", "/dashboard/:path*", "/lesson/:path*", "/resources/:path*", "/settings/:path*", "/progress/:path*", "/reviews/:path*", "/guides/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/", "/login", "/signup", "/dashboard/:path*", "/lesson/:path*", "/resources/:path*", "/settings/:path*", "/progress/:path*", "/studio/:path*", "/reviews/:path*", "/guides/:path*", "/admin/:path*"] };

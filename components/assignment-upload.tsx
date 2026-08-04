@@ -47,7 +47,7 @@ export function AssignmentUpload({
     }
     setAssignment(result.assignment);
     setLoading(false);
-    toast.success("Assignment submitted for review.");
+    toast.success(result.gameReward ? `Assignment framed: +${result.gameReward.xp} XP and +${result.gameReward.brushes} Gold Brushes.` : "Assignment submitted for review.");
   }
 
   if (assignment) {
