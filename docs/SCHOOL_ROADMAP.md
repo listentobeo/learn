@@ -91,17 +91,22 @@ Checking assignments alone is insufficient because a student may submit their fi
 
 - The Gen Z Artist's Social Guide is free to every authenticated Beo student and does not count toward certification.
 
+## Phase 4 — gamified Studio Journey
+
+- Build the private Personal Studio, Studio XP, Gold Brushes, framed assignment wall, Reward Shop, lesson challenges, correction rounds, badges and weekly practice rhythm described in [`GAMIFICATION_BUILD_PLAN.md`](./GAMIFICATION_BUILD_PLAN.md).
+- Gamification remains a learning and presentation layer. It does not change payment, lesson drip or full-track certificate requirements.
+
 ## Deferred
 
 - A separate parent login and portal are not part of the current build. Parent communication remains limited to the existing optional email summaries and notifications.
 
-## Phase 4 — progression and mentorship
+## Phase 5 — progression and mentorship
 
 - Locked mentorship path available only to eligible graduates or invited students.
 - Completion/certificate status becomes one eligibility input.
 - Separate mentorship enrollment, content access, payment, and scheduling rules.
 
-## Phase 5 — assignment-review shadow learning
+## Phase 6 — assignment-review shadow learning
 
 - Implement the staged shadow-learning system in [`AI_SHADOW_LEARNING.md`](./AI_SHADOW_LEARNING.md) using the dynamic lesson rules in [`AI_REVIEW_SPEC.md`](./AI_REVIEW_SPEC.md).
 - On submission, load the lesson title, notes, assignment instructions, week number, track, and three quiz concepts from Supabase.
