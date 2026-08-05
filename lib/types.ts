@@ -111,21 +111,3 @@ export type StudentAchievement = {
     icon_key: string;
   };
 };
-
-export type StudioChallenge = {
-  id: string;
-  lesson_code: string;
-  challenge_type: "quick_choice" | "sequence" | "sort_match" | "value_order";
-  title: string;
-  prompt: string;
-  version: number;
-  config: {
-    options?: Array<{ id: string; label: string }>;
-    items?: Array<{ id: string; label: string }>;
-    targets?: Array<{ id: string; label: string }>;
-  };
-  reward_xp: number;
-  reward_brushes: number;
-  is_mastery: boolean;
-  completed: boolean;
-};

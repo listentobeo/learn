@@ -26,11 +26,17 @@ export async function POST(request: Request) {
       isCorrect: answers[question.id] === question.correct_answer,
       explanation: "",
     }));
-    return NextResponse.json({ score: review.filter((item) => item.isCorrect).length, attempt: 1, review, gameReward: { xp: 20, brushes: 5 }, demo: true });
+    const score = review.filter((item) => item.isCorrect).length;
+    return NextResponse.json({ score, attempt: 1, review, gameRewards: [{ label: "Knowledge check complete", xp: 20, brushes: 5 }, ...(score === 3 ? [{ label: "Full-score mastery", xp: 20, brushes: 7 }] : [])], demo: true });
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const [{ data: priorSubmissions, error: priorError }, { data: rewardSetting }] = await Promise.all([
+    supabase.from("quiz_submissions").select("score").eq("student_id", user.id).eq("lesson_code", lessonCode),
+    supabase.from("gamification_settings").select("enabled").eq("id", true).maybeSingle(),
+  ]);
+  if (priorError) return NextResponse.json({ error: priorError.message }, { status: 400 });
   const { data, error } = await supabase.rpc("submit_lesson_quiz", {
     p_lesson_code: lessonCode,
     p_answers: answers,
@@ -47,6 +53,13 @@ export async function POST(request: Request) {
       // The database completion queue remains available for the scheduled retry.
     }
   });
-  const result = data as { attempt?: number };
-  return NextResponse.json({ ...result, gameReward: result.attempt === 1 ? { xp: 20, brushes: 5 } : null });
+  const result = data as { attempt?: number; score?: number };
+  const prior = priorSubmissions || [];
+  const gameRewards: Array<{ label: string; xp: number; brushes: number }> = [];
+  if (rewardSetting?.enabled !== false && !prior.length) gameRewards.push({ label: "Knowledge check complete", xp: 20, brushes: 5 });
+  if (rewardSetting?.enabled !== false && result.score === 3 && !prior.some((row) => row.score === 3)) {
+    gameRewards.push({ label: "Full-score mastery", xp: 20, brushes: 7 });
+    if (prior.some((row) => row.score < 3)) gameRewards.push({ label: "Corrections mastered", xp: 10, brushes: 3 });
+  }
+  return NextResponse.json({ ...result, gameRewards });
 }

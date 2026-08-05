@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/server";
 const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("toggle"), enabled: z.boolean() }),
   z.object({ action: z.literal("catalog"), itemId: z.string().uuid(), price: z.number().int().min(0).max(100000), minimumLevel: z.number().int().min(1).max(99), active: z.boolean() }),
-  z.object({ action: z.literal("challenge"), challengeId: z.string().uuid(), active: z.boolean(), approved: z.boolean(), rewardXp: z.number().int().min(0).max(1000), rewardBrushes: z.number().int().min(0).max(1000) }),
   z.object({ action: z.literal("award"), studentId: z.string().uuid(), xp: z.number().int().min(0).max(10000), brushes: z.number().int().min(0).max(10000), reason: z.string().trim().min(3).max(240) }),
 ]);
 
@@ -37,9 +36,6 @@ export async function PATCH(request: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   } else if (input.action === "catalog") {
     const { error } = await auth.admin.from("studio_catalog_items").update({ price: input.price, minimum_level: input.minimumLevel, active: input.active, updated_at: new Date().toISOString() }).eq("id", input.itemId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  } else if (input.action === "challenge") {
-    const { error } = await auth.admin.from("lesson_game_challenges").update({ active: input.active, approved: input.approved, reward_xp: input.rewardXp, reward_brushes: input.rewardBrushes, updated_at: new Date().toISOString() }).eq("id", input.challengeId);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   } else {
     try {

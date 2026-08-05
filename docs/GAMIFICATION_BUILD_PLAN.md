@@ -1,6 +1,6 @@
 # Beo School of Art gamification build plan
 
-> Deployment candidate completed 4 August 2026. The implemented release includes the trusted reward ledger, historical backfill, dashboard economy strip, My Studio Journey, private Personal Studio, frames/themes/decor, Reward Shop, usable practice packs, lesson challenges with correction rounds, achievement cabinet, weekly rhythm, admin economy controls and a feature switch. See `GAMIFICATION_DEPLOYMENT.md` for launch steps.
+> Updated 5 August 2026. The learning loop now uses the existing quiz and correction cycle as the reward experience; the separate pre-quiz challenge was retired. Personal Studio is a navigable three-wall room where purchased objects have visible, persistent uses. See `GAMIFICATION_DEPLOYMENT.md` for launch steps.
 
 ## Goal
 
@@ -29,7 +29,6 @@ Gamification must never replace the curriculum, change certificate requirements,
 ```text
 Open current quest
     -> Watch the lesson
-    -> Play the lesson Studio Challenge
     -> Complete the quiz and correction round
     -> Submit practical work
     -> See the work enter the studio wall
@@ -109,13 +108,12 @@ Recommended starting values:
 
 | Event | Studio XP | Gold Brushes |
 |---|---:|---:|
-| First Studio Challenge completion | 20 | 5 |
 | First quiz submission for a lesson | 20 | 5 |
-| First correction round completion | 10 | 3 |
+| First full-score quiz mastery | 20 | 7 |
+| Previously missed answers mastered | 10 | 3 |
 | Assignment submitted | 40 | 10 |
 | Assignment reviewed | 60 | 15 |
 | Lesson fully completed | 50 | 15 |
-| Mastery Challenge completed | 80 | 25 |
 | Track completed | 300 | 100 |
 
 Initial shop pricing should allow a student to purchase a simple frame after one lesson and save for larger themes or learning packs over several lessons.
@@ -131,29 +129,9 @@ Suggested artist levels:
 
 Level thresholds and reward prices must be stored as configurable school data so they can be tuned without rewriting application logic.
 
-## Learning games
+## Quiz-led learning game
 
-Build reusable challenge engines driven by Supabase configuration rather than 32 unrelated hard-coded games.
-
-### Initial challenge types
-
-1. `multiple_visual_choice`: select the correct image, tool, mark or correction.
-2. `sequence`: arrange drawing or painting steps in the correct order.
-3. `sort_match`: match tools, values, colours, techniques or concepts.
-4. `value_order`: arrange tonal values from lightest to darkest.
-
-Later challenge types:
-
-- colour mixing;
-- light and shadow placement;
-- proportion and grid correction;
-- image hotspot identification;
-- layer building;
-- timed observation.
-
-Each challenge must contain a lesson-specific explanation. Incorrect answers create a correction round; they do not remove XP or shame the student. Challenge completion is educational reinforcement and does not become a certificate requirement.
-
-Every three or four lessons can end with a Mastery Challenge that combines previously taught skills. It must never assess techniques from later lessons.
+The existing three-question knowledge check is the game layer. Students receive immediate explanations, may retake without penalty, earn a one-time full-score mastery reward, and receive a correction reward when a later attempt masters previously missed material. Rewards are deduplicated server-side so retakes cannot be farmed.
 
 ## Supabase foundation
 
@@ -352,19 +330,11 @@ Benjamin should not need to manually award normal XP or place student assignment
 - Add artist levels, currency balance, current quest, lesson states and badges.
 - Add milestone celebration panels and level-up states.
 
-### Phase 6: reusable learning-game engine
+### Phase 6: quiz mastery rewards
 
-- Build the first four challenge types.
-- Add server-side scoring, correction rounds and attempt history.
-- Connect games to lessons without changing certification rules.
-- Add the challenge authoring and approval interface.
-
-### Phase 7: curriculum game content
-
-- Create and review at least one approved challenge for all 32 lessons.
-- Add Mastery Challenges at agreed curriculum intervals.
-- Verify every challenge assesses only already-taught concepts.
-- Complete Benjamin's content-accuracy approval pass.
+- Reward the existing server-scored quiz and correction cycle.
+- Keep attempt history and one-time reward deduplication.
+- Preserve quiz retakes without penalties or certificate-rule changes.
 
 ### Phase 8: achievements and weekly rhythm
 
@@ -390,8 +360,7 @@ The gamification goal is complete only when:
 - the shop prevents overspending and duplicate ownership;
 - all trusted learning events award exactly once;
 - Studio Journey reflects the real selected track and current next action;
-- all 32 lessons have an approved educational challenge;
-- correction rounds teach missed concepts;
+- all lesson quizzes provide corrections and reward mastered material accurately;
 - badges, levels, weekly rhythm and celebrations work on mobile;
 - Benjamin can manage the system without routine manual awards;
 - lesson drip, payments, feedback and certificate completion remain unchanged;

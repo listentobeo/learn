@@ -27,7 +27,7 @@ export function Quiz({
   const [score, setScore] = useState<number | null>(null);
   const [attempt, setAttempt] = useState(1);
   const [review, setReview] = useState<ReviewItem[]>([]);
-  const [gameReward, setGameReward] = useState<{ xp: number; brushes: number } | null>(null);
+  const [gameRewards, setGameRewards] = useState<Array<{ label: string; xp: number; brushes: number }>>([]);
   const [submitting, setSubmitting] = useState(false);
   const complete = useMemo(() => questions.every((question) => answers[question.id]), [answers, questions]);
 
@@ -49,7 +49,7 @@ export function Quiz({
       setScore(result.score);
       setAttempt(result.attempt ?? attempt);
       setReview(result.review || []);
-      setGameReward(result.gameReward || null);
+      setGameRewards(result.gameRewards || []);
     } catch {
       toast.error("Your connection changed while submitting. Check your network and try again.");
     } finally {
@@ -61,7 +61,7 @@ export function Quiz({
     setAnswers({});
     setScore(null);
     setReview([]);
-    setGameReward(null);
+    setGameRewards([]);
   }
 
   if (score !== null) {
@@ -70,7 +70,7 @@ export function Quiz({
         <div className="eyebrow">Attempt {attempt} complete</div>
         <h2 style={{ fontSize: 35, marginTop: 18 }}>You scored {score} / {questions.length}</h2>
         <p className="subtle">{score === questions.length ? "Excellent work. Every answer is correct." : "Review each correction below. You can retake the quiz or continue when the answers make sense."}</p>
-        {gameReward && <div className="lesson-reward-reveal"><span><Sparkles size={16} /> +{gameReward.xp} XP</span><span><Coins size={16} /> +{gameReward.brushes} Gold Brushes</span><small>First knowledge check reward added to your Studio Journey.</small></div>}
+        {gameRewards.length > 0 && <div className="lesson-reward-reveal"><strong>Studio rewards earned</strong>{gameRewards.map((reward) => <div key={reward.label}><small>{reward.label}</small><span><Sparkles size={16} /> +{reward.xp} XP</span><span><Coins size={16} /> +{reward.brushes} Gold Brushes</span></div>)}</div>}
         <div className="quiz-review">
           {questions.map((question, index) => {
             const result = review.find((item) => item.questionId === question.id);

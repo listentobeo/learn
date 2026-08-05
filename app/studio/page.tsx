@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { StudioExperience, type StudioArtwork } from "@/components/studio-experience";
+import { StudioExperience, type StudioArtwork, type StudioLayout } from "@/components/studio-experience";
 import { demoGameProfile, getGamificationSummary } from "@/lib/gamification";
 import { demoProfile } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +18,7 @@ export default async function StudioPage() {
   let certificates: Array<{ track: string; code: string }> = [];
   let setupMissing = false;
   let gameEnabled = true;
+  let studioLayout: StudioLayout = { featuredArtworkId: null, decorSlots: {} };
 
   if (supabase) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -28,7 +29,7 @@ export default async function StudioPage() {
         supabase.from("studio_displays").select("assignment_id,frame_item_id,wall_slot").eq("student_id", user.id).order("wall_slot"),
         supabase.from("studio_catalog_items").select("id,item_key,category,name,description,price,minimum_level,visual_config,active,sort_order").eq("active", true).order("sort_order"),
         supabase.from("student_inventory").select("id,item:studio_catalog_items(id,item_key,category,name,description,price,minimum_level,visual_config,active,sort_order)").eq("student_id", user.id),
-        supabase.from("student_studios").select("selected_theme_id").eq("student_id", user.id).maybeSingle(),
+        supabase.from("student_studios").select("selected_theme_id,layout_config").eq("student_id", user.id).maybeSingle(),
         supabase.from("certificates").select("track,certificate_code").eq("student_id", user.id).order("issued_at"),
         getGamificationSummary(supabase, user.id),
       ]);
@@ -59,13 +60,15 @@ export default async function StudioPage() {
         return { ...(Array.isArray(relation) ? relation[0] : relation), inventoryId: inventory.id };
       }).filter((item) => Boolean(item.id));
       selectedThemeId = studioResult.data?.selected_theme_id || null;
+      const savedLayout = studioResult.data?.layout_config as Partial<StudioLayout> | null;
+      studioLayout = { featuredArtworkId: savedLayout?.featuredArtworkId || null, decorSlots: savedLayout?.decorSlots || {} };
       certificates = (certificateResult.data || []).map((certificate) => ({ track: certificate.track, code: certificate.certificate_code }));
     }
   }
 
   return (
     <AppShell name={profile.name} track={profile.track}>
-      {setupMissing ? <section className="settings-note"><strong>Personal Studio database setup is required.</strong><p>Run <code>20260804_gamified_personal_studio.sql</code> in Supabase, then refresh this page.</p></section> : <StudioExperience name={profile.name} initialProfile={gameProfile as GamificationProfile} artworks={artworks} catalog={catalog} initialOwned={owned} initialThemeId={selectedThemeId} certificates={certificates} enabled={gameEnabled} />}
+      {setupMissing ? <section className="settings-note"><strong>Personal Studio database setup is required.</strong><p>Run the 20260804 and 20260805 gamification migrations in Supabase, then refresh this page.</p></section> : <StudioExperience name={profile.name} initialProfile={gameProfile as GamificationProfile} artworks={artworks} catalog={catalog} initialOwned={owned} initialThemeId={selectedThemeId} initialLayout={studioLayout} certificates={certificates} enabled={gameEnabled} />}
     </AppShell>
   );
 }

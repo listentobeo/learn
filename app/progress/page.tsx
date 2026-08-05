@@ -1,4 +1,4 @@
-import { Award, CheckCircle2, CircleDashed, Clock3, Coins, Flame, Frame, Gamepad2, Lock, Sparkles, Trophy } from "lucide-react";
+import { Award, CheckCircle2, CircleDashed, Clock3, Coins, Flame, Frame, Lock, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { CertificateCard } from "@/components/certificate-card";
@@ -31,7 +31,6 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   let gameProfile = demoGameProfile as GamificationProfile;
   let levels = fallbackArtistLevels;
   let achievements: StudentAchievement[] = [];
-  let completedChallenges = new Set<string>();
 
   if (supabase) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -49,21 +48,16 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
       const allowedTrack = ["Drawing", "Painting", "Discovery"].includes(requestedTrack || "") ? requestedTrack as Track : null;
       const selected = enrollments.find((item) => item.track === allowedTrack) || enrollments.find((item) => item.track === profile.track) || enrollments[0];
       if (selected) profile = { ...profile, track: selected.track, enrollment_date: selected.enrollment_date, payment_status: selected.payment_status };
-      const [{ data: lessonRows }, { data: quizRows }, { data: assignmentRows }, { data: certificateRow }, { data: challengeRows }] = await Promise.all([
+      const [{ data: lessonRows }, { data: quizRows }, { data: assignmentRows }, { data: certificateRow }] = await Promise.all([
         supabase.from("lessons").select("*").eq("track", profile.track).order("week_number"),
         supabase.from("quiz_submissions").select("lesson_code,score,attempt_number,submitted_at").eq("student_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("assignments").select("lesson_code,submitted_at,seen_at,reviewed,reviewed_at,feedback").eq("student_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("certificates").select("id,student_id,track,file_url,certificate_code,issued_at").eq("student_id", user.id).eq("track", profile.track).maybeSingle(),
-        supabase.from("game_attempts").select("lesson_game_challenges(lesson_code)").eq("student_id", user.id).eq("is_correct", true),
       ]);
       lessons = (lessonRows || []) as Lesson[];
       quizzes = (quizRows || []) as QuizRow[];
       assignments = (assignmentRows || []) as AssignmentRow[];
       certificate = certificateRow as Certificate | null;
-      completedChallenges = new Set((challengeRows || []).map((row) => {
-        const relation = row.lesson_game_challenges as unknown as { lesson_code: string } | { lesson_code: string }[];
-        return Array.isArray(relation) ? relation[0]?.lesson_code : relation?.lesson_code;
-      }).filter(Boolean));
     }
   }
 
@@ -80,10 +74,8 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   const questAssignment = questLesson ? assignmentByLesson.get(questLesson.lesson_code) : null;
   const quest = !questLesson
     ? { title: certificate ? "Your track is complete" : "All requirements are complete", copy: certificate ? "Your certificate and finished work are waiting in your Personal Studio." : "Your certificate will appear after the final completion check.", href: "/studio", action: "Open Personal Studio" }
-    : !completedChallenges.has(questLesson.lesson_code)
-      ? { title: `Play ${questLesson.lesson_code} Studio Challenge`, copy: "Warm up with the lesson idea, then move into the knowledge check.", href: `/lesson/${questLesson.lesson_code}`, action: "Start challenge" }
-      : !questQuiz
-        ? { title: `Complete the ${questLesson.lesson_code} knowledge check`, copy: "Use the Studio Challenge idea while answering the three lesson questions.", href: `/lesson/${questLesson.lesson_code}`, action: "Take knowledge check" }
+    : !questQuiz
+        ? { title: `Complete the ${questLesson.lesson_code} knowledge check`, copy: "Answer the lesson questions, review corrections and earn your studio rewards.", href: `/lesson/${questLesson.lesson_code}`, action: "Take knowledge check" }
         : !questAssignment
           ? { title: `Submit your ${questLesson.lesson_code} practical work`, copy: "Photograph the finished work clearly. It will enter your studio wall immediately.", href: `/lesson/${questLesson.lesson_code}`, action: "Open assignment" }
           : !questAssignment.reviewed
@@ -113,14 +105,13 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             const open = isLessonUnlocked(lesson, profile);
             const quiz = latestQuiz.get(lesson.lesson_code);
             const assignment = assignmentByLesson.get(lesson.lesson_code);
-            const challengeDone = completedChallenges.has(lesson.lesson_code);
             const complete = Boolean(quiz && assignment?.reviewed);
-            const state = !open ? "locked" : complete ? "complete" : assignment ? "review" : quiz ? "assignment" : challengeDone ? "quiz" : "challenge";
+            const state = !open ? "locked" : complete ? "complete" : assignment ? "review" : quiz ? "assignment" : "quiz";
             return (
               <article className={`journey-node ${state}`} key={lesson.lesson_code}>
                 <div className="journey-line" />
-                <div className="journey-node-icon">{!open ? <Lock size={16} /> : complete ? <CheckCircle2 size={18} /> : assignment ? <Clock3 size={17} /> : challengeDone ? <Gamepad2 size={17} /> : <CircleDashed size={17} />}</div>
-                <div className="journey-node-copy"><span>Level {index + 1} · {lesson.lesson_code}</span><h3>{lesson.title}</h3><p>{!open ? `Unlocks in week ${lesson.week_number}` : complete ? "Challenge, quiz and review complete" : assignment ? assignment.seen_at ? "Seen by Benjamin" : "Framed · awaiting review" : quiz ? "Practical assignment next" : challengeDone ? "Knowledge check next" : "Studio Challenge ready"}</p></div>
+                <div className="journey-node-icon">{!open ? <Lock size={16} /> : complete ? <CheckCircle2 size={18} /> : assignment ? <Clock3 size={17} /> : <CircleDashed size={17} />}</div>
+                <div className="journey-node-copy"><span>Level {index + 1} · {lesson.lesson_code}</span><h3>{lesson.title}</h3><p>{!open ? `Unlocks in week ${lesson.week_number}` : complete ? "Quiz and guided review complete" : assignment ? assignment.seen_at ? "Seen by Benjamin" : "Framed · awaiting review" : quiz ? "Practical assignment next" : "Knowledge check ready"}</p></div>
                 {open && <Link href={`/lesson/${lesson.lesson_code}`}>{complete ? "Review lesson" : "Continue"}</Link>}
               </article>
             );

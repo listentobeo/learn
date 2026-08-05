@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ArtistLevel, GamificationProfile, StudentAchievement, StudioChallenge } from "@/lib/types";
+import type { ArtistLevel, GamificationProfile, StudentAchievement } from "@/lib/types";
 
 export const fallbackArtistLevels: ArtistLevel[] = [
   { level: 1, title: "Curious Observer", min_xp: 0 },
@@ -81,44 +81,4 @@ export async function awardGamificationEvent(client: SupabaseClient, input: {
   });
   if (error) throw error;
   return data as { awarded: boolean; profile: GamificationProfile };
-}
-
-export async function getStudioChallenge(client: SupabaseClient, studentId: string, lessonCode: string): Promise<StudioChallenge | null> {
-  const { data: setting } = await client.from("gamification_settings").select("enabled").eq("id", true).maybeSingle();
-  if (setting?.enabled === false) return null;
-  const { data: challenge } = await client
-    .from("lesson_game_challenges")
-    .select("id,lesson_code,challenge_type,title,prompt,version,challenge_config,reward_xp,reward_brushes,is_mastery")
-    .eq("lesson_code", lessonCode)
-    .eq("approved", true)
-    .eq("active", true)
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!challenge) return null;
-
-  const { count } = await client
-    .from("game_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("student_id", studentId)
-    .eq("challenge_id", challenge.id)
-    .eq("is_correct", true);
-  const config = (challenge.challenge_config || {}) as Record<string, unknown>;
-  return {
-    id: challenge.id,
-    lesson_code: challenge.lesson_code,
-    challenge_type: challenge.challenge_type,
-    title: challenge.title,
-    prompt: challenge.prompt,
-    version: challenge.version,
-    config: {
-      options: Array.isArray(config.options) ? config.options as Array<{ id: string; label: string }> : undefined,
-      items: Array.isArray(config.items) ? config.items as Array<{ id: string; label: string }> : undefined,
-      targets: Array.isArray(config.targets) ? config.targets as Array<{ id: string; label: string }> : undefined,
-    },
-    reward_xp: challenge.reward_xp,
-    reward_brushes: challenge.reward_brushes,
-    is_mastery: challenge.is_mastery,
-    completed: Boolean(count),
-  };
 }

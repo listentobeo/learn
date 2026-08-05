@@ -11,7 +11,7 @@ export function SideNav({ admin, mobile = false }: { admin: boolean; mobile?: bo
     { href: "/admin/students", label: "Student records", icon: BookOpen },
     { href: "/admin/reviews", label: "Review calls", icon: CalendarClock },
     { href: "/admin/automations", label: "Automations", icon: BellRing },
-    { href: "/admin/gamification", label: "Game system", icon: Gamepad2 },
+    { href: "/admin/gamification", label: "Rewards & Studio", icon: Gamepad2 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ] : [
     { href: "/dashboard", label: "My course", icon: LayoutGrid },
