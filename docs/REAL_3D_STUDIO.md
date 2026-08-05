@@ -25,7 +25,11 @@ Then run `supabase/migrations/20260807_constrain_3d_studio_artwork.sql`. It prev
 
 - Desktop Explore: use WASD or the arrow keys to walk and turn. Edge arrows and room dots provide fast travel.
 - Mobile Explore: use the five-button movement pad. Room dots provide fast travel.
+- Click or tap the scene to focus the game. While focused, keyboard and wheel input stay inside the game instead of scrolling the school page.
+- Drag the scene in Explore mode to orbit around the student; use the wheel to zoom.
 - Arrange: orbit and zoom the camera to inspect the gallery.
+
+The expand button creates a contained full-viewport game on both desktop and mobile. Assignment textures are fetched through the authenticated `/api/studio/artwork/[id]` route with the student's session rather than as anonymous images.
 - Arrange: select an artwork, drag it, or use the toolbar for fine positioning; press Save to persist it.
 
 The Canvas has a non-WebGL fallback. Device pixel ratio is capped at 1.5, shadows are limited, and 3D code is dynamically loaded only on the Studio route.

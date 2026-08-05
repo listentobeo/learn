@@ -3,7 +3,7 @@
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CameraControls, ContactShadows, Html, RoundedBox, useProgress } from "@react-three/drei";
 import type { CameraControls as CameraControlsImpl } from "@react-three/drei";
-import { Award, Box, Camera, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Coins, Footprints, HelpCircle, Menu, Minus, Move, Paintbrush, Plus, RotateCcw, Save, ShoppingCart, Sparkles } from "lucide-react";
+import { Award, Box, Camera, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Coins, Footprints, HelpCircle, Maximize2, Menu, Minimize2, Minus, Move, Paintbrush, Plus, RotateCcw, Save, ShoppingCart, Sparkles } from "lucide-react";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasTexture, ClampToEdgeWrapping, Color, DoubleSide, Group, LinearFilter, MathUtils, Mesh, SRGBColorSpace, Texture, TextureLoader, Vector3 } from "three";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ export type GameArtwork = {
 type CameraView = "overview" | StudioWallId | "certificates";
 type Mode = "explore" | "arrange";
 type MovementInput = { forward: boolean; backward: boolean; left: boolean; right: boolean };
+type OrbitSettings = { yaw: number; height: number; distance: number };
 
 const views: CameraView[] = ["overview", "wall-a", "wall-b", "wall-c", "certificates"];
 const wallCenters: Record<StudioWallId, number> = { "wall-a": -3.35, "wall-b": 0, "wall-c": 3.35 };
@@ -126,32 +127,43 @@ function useArtworkTexture(url: string | null) {
   useEffect(() => {
     if (!url) return;
     let mounted = true;
-    const loader = new TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    loader.load(url, (next) => {
-      if (!mounted) { next.dispose(); return; }
-      const source = next.image as HTMLImageElement;
-      const canvas = document.createElement("canvas");
-      canvas.width = 768;
-      canvas.height = 600;
-      const context = canvas.getContext("2d");
-      if (!context) { next.dispose(); return; }
-      context.fillStyle = "#eee8dc";
-      context.fillRect(0,0,canvas.width,canvas.height);
-      const ratio = Math.min(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
-      const width = source.naturalWidth * ratio;
-      const height = source.naturalHeight * ratio;
-      context.drawImage(source, (canvas.width-width)/2, (canvas.height-height)/2, width, height);
-      next.dispose();
-      const fitted = new CanvasTexture(canvas);
-      fitted.colorSpace = SRGBColorSpace;
-      fitted.minFilter = LinearFilter;
-      fitted.wrapS = ClampToEdgeWrapping;
-      fitted.wrapT = ClampToEdgeWrapping;
-      setTexture((old) => { old?.dispose(); return fitted; });
-      setFailed(false);
-    }, undefined, () => { if (mounted) setFailed(true); });
-    return () => { mounted = false; };
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch(url, { credentials: "include", cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error(`Artwork returned ${response.status}`);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const loader = new TextureLoader();
+        loader.load(objectUrl, (next) => {
+          URL.revokeObjectURL(objectUrl);
+          if (!mounted) { next.dispose(); return; }
+          const source = next.image as HTMLImageElement;
+          const canvas = document.createElement("canvas");
+          canvas.width = 768;
+          canvas.height = 600;
+          const context = canvas.getContext("2d");
+          if (!context || !source.naturalWidth || !source.naturalHeight) { next.dispose(); setFailed(true); return; }
+          context.fillStyle = "#eee8dc";
+          context.fillRect(0,0,canvas.width,canvas.height);
+          const ratio = Math.min(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
+          const width = source.naturalWidth * ratio;
+          const height = source.naturalHeight * ratio;
+          context.drawImage(source, (canvas.width-width)/2, (canvas.height-height)/2, width, height);
+          next.dispose();
+          const fitted = new CanvasTexture(canvas);
+          fitted.colorSpace = SRGBColorSpace;
+          fitted.minFilter = LinearFilter;
+          fitted.wrapS = ClampToEdgeWrapping;
+          fitted.wrapT = ClampToEdgeWrapping;
+          setTexture((old) => { old?.dispose(); return fitted; });
+          setFailed(false);
+        }, undefined, () => { URL.revokeObjectURL(objectUrl); if (mounted) setFailed(true); });
+      } catch (error) {
+        if (mounted && !(error instanceof DOMException && error.name === "AbortError")) setFailed(true);
+      }
+    })();
+    return () => { mounted = false; controller.abort(); };
   }, [url]);
   return { texture, failed };
 }
@@ -206,6 +218,7 @@ function ArtworkFrame3D({ artwork, frameKey, selected, arrange, onSelect, onChan
         <planeGeometry args={[1.08, 0.85]} />
         {texture ? <meshStandardMaterial map={texture} roughness={0.73} side={DoubleSide} /> : <meshStandardMaterial color={failed ? "#3c2420" : "#e6dfd0"} roughness={0.9} />}
       </mesh>
+      {failed && <MountedLabel lines={["IMAGE UNAVAILABLE","Refresh or upload again"]} position={[0,0,.075]} size={[.9,.32]} background="#3c2420" foreground="#f1d9cf" accent="#d19a83" serif={false} />}
       <MountedLabel lines={[artwork.lessonCode, artwork.title]} position={[0,-.65,.04]} size={[1.08,.25]} serif={false} />
       {selected && arrange && <mesh position={[0, 0, 0.13]}><planeGeometry args={[1.38, 1.15]} /><meshBasicMaterial color="#c9a84c" transparent opacity={0.12} /></mesh>}
     </group>
@@ -291,7 +304,7 @@ function validPlayerPosition(x: number, z: number, hasEasel: boolean) {
   return !obstacles.some((box) => x + radius > box.minX && x - radius < box.maxX && z + radius > box.minZ && z - radius < box.maxZ);
 }
 
-function CharacterController({ name, active, view, input, hasEasel, onMoving }: { name: string; active: boolean; view: CameraView; input: MovementInput; hasEasel: boolean; onMoving: (moving: boolean) => void }) {
+function CharacterController({ name, active, controlsEnabled, view, input, orbit, hasEasel, onMoving }: { name: string; active: boolean; controlsEnabled: boolean; view: CameraView; input: MovementInput; orbit: OrbitSettings; hasEasel: boolean; onMoving: (moving: boolean) => void }) {
   const root = useRef<Group | null>(null);
   const leftArm = useRef<Group | null>(null);
   const rightArm = useRef<Group | null>(null);
@@ -299,30 +312,47 @@ function CharacterController({ name, active, view, input, hasEasel, onMoving }: 
   const rightLeg = useRef<Group | null>(null);
   const rotation = useRef(0);
   const phase = useRef(0);
+  const reportedMoving = useRef(false);
   const keys = useRef<MovementInput>({ forward:false, backward:false, left:false, right:false });
   const current = useRef(new Vector3(0,0,1.2));
   const { camera, invalidate } = useThree();
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
+      if (!active || !controlsEnabled) return;
       if ((event.target as HTMLElement)?.matches("input,select,textarea,button")) return;
-      if (["w","arrowup"].includes(event.key.toLowerCase())) keys.current.forward = true;
-      if (["s","arrowdown"].includes(event.key.toLowerCase())) keys.current.backward = true;
-      if (["a","arrowleft"].includes(event.key.toLowerCase())) keys.current.left = true;
-      if (["d","arrowright"].includes(event.key.toLowerCase())) keys.current.right = true;
+      const key = event.key.toLowerCase();
+      if (!["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"," "].includes(key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (["w","arrowup"].includes(key)) keys.current.forward = true;
+      if (["s","arrowdown"].includes(key)) keys.current.backward = true;
+      if (["a","arrowleft"].includes(key)) keys.current.left = true;
+      if (["d","arrowright"].includes(key)) keys.current.right = true;
       invalidate();
     };
     const up = (event: KeyboardEvent) => {
-      if (["w","arrowup"].includes(event.key.toLowerCase())) keys.current.forward = false;
-      if (["s","arrowdown"].includes(event.key.toLowerCase())) keys.current.backward = false;
-      if (["a","arrowleft"].includes(event.key.toLowerCase())) keys.current.left = false;
-      if (["d","arrowright"].includes(event.key.toLowerCase())) keys.current.right = false;
+      if (!active || !controlsEnabled) return;
+      const key = event.key.toLowerCase();
+      if (!["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"," "].includes(key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (["w","arrowup"].includes(key)) keys.current.forward = false;
+      if (["s","arrowdown"].includes(key)) keys.current.backward = false;
+      if (["a","arrowleft"].includes(key)) keys.current.left = false;
+      if (["d","arrowright"].includes(key)) keys.current.right = false;
       invalidate();
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-  }, [invalidate]);
+  }, [active,controlsEnabled,invalidate]);
+
+  useEffect(() => {
+    if (controlsEnabled) return;
+    keys.current = { forward:false,backward:false,left:false,right:false };
+    if (reportedMoving.current) { reportedMoving.current = false; onMoving(false); }
+  }, [controlsEnabled,onMoving]);
 
   useEffect(() => {
     if (!active || !root.current) return;
@@ -361,19 +391,20 @@ function CharacterController({ name, active, view, input, hasEasel, onMoving }: 
       if (validPlayerPosition(nextX,nextZ,hasEasel)) current.current.set(nextX,0,nextZ);
       phase.current += delta * 9;
     }
-    root.current.position.lerp(current.current,.36);
+    root.current.position.copy(current.current);
     root.current.rotation.y = MathUtils.lerp(root.current.rotation.y, rotation.current, .28);
     const swing = moving ? Math.sin(phase.current) * .62 : 0;
     if (leftArm.current) leftArm.current.rotation.x = MathUtils.lerp(leftArm.current.rotation.x,swing,.25);
     if (rightArm.current) rightArm.current.rotation.x = MathUtils.lerp(rightArm.current.rotation.x,-swing,.25);
     if (leftLeg.current) leftLeg.current.rotation.x = MathUtils.lerp(leftLeg.current.rotation.x,-swing,.25);
     if (rightLeg.current) rightLeg.current.rotation.x = MathUtils.lerp(rightLeg.current.rotation.x,swing,.25);
-    const behind = new Vector3(Math.sin(rotation.current) * 3.15,2.65,Math.cos(rotation.current) * 3.15).add(current.current);
+    const cameraAngle = rotation.current + orbit.yaw;
+    const behind = new Vector3(Math.sin(cameraAngle) * orbit.distance,orbit.height,Math.cos(cameraAngle) * orbit.distance).add(current.current);
     behind.x = clamp(behind.x,-5.65,5.65);
     behind.z = clamp(behind.z,-4.25,4.45);
     state.camera.position.lerp(behind,1-Math.pow(.001,delta));
     state.camera.lookAt(current.current.x,1.42,current.current.z);
-    onMoving(moving);
+    if (reportedMoving.current !== moving) { reportedMoving.current = moving; onMoving(moving); }
     if (moving || turning || state.camera.position.distanceTo(behind) > .02) invalidate();
   });
   return <group ref={root}><ArtistAvatar name={name} leftArm={leftArm} rightArm={rightArm} leftLeg={leftLeg} rightLeg={rightLeg} /></group>;
@@ -456,12 +487,13 @@ function CameraRig({ view, active, controlsRef }: { view: CameraView; active: bo
     };
     void controls.setLookAt(...destinations[view], true);
   }, [view, active, controlsRef, camera]);
-  return <CameraControls ref={controlsRef} enabled={active} minDistance={2.1} maxDistance={10.5} minPolarAngle={.65} maxPolarAngle={1.48} truckSpeed={1.05} dollySpeed={.65} smoothTime={.45} />;
+  if (!active) return null;
+  return <CameraControls ref={controlsRef} minDistance={2.1} maxDistance={10.5} minPolarAngle={.65} maxPolarAngle={1.48} truckSpeed={1.05} dollySpeed={.65} smoothTime={.45} />;
 }
 
-function Scene({ view, name, input, onMoving, ...props }: React.ComponentProps<typeof StudioRoom> & { view: CameraView; name: string; input: MovementInput; onMoving: (moving:boolean) => void }) {
+function Scene({ view, name, input, orbit, controlsEnabled, onMoving, ...props }: React.ComponentProps<typeof StudioRoom> & { view: CameraView; name: string; input: MovementInput; orbit: OrbitSettings; controlsEnabled: boolean; onMoving: (moving:boolean) => void }) {
   const controlsRef = useRef<CameraControlsImpl | null>(null);
-  return <><CameraRig view={view} active={props.mode === "arrange"} controlsRef={controlsRef} /><StudioRoom {...props} /><CharacterController name={name} active={props.mode === "explore"} view={view} input={input} hasEasel={props.decorated.has("easel")} onMoving={onMoving} /></>;
+  return <><CameraRig view={view} active={props.mode === "arrange"} controlsRef={controlsRef} /><StudioRoom {...props} /><CharacterController name={name} active={props.mode === "explore"} controlsEnabled={controlsEnabled} view={view} input={input} orbit={orbit} hasEasel={props.decorated.has("easel")} onMoving={onMoving} /></>;
 }
 
 export function StudioGame({ name, profile, initialArtworks, catalog, owned, activeDecorItemIds, themeKey, certificates, featuredArtworkId, onOpenShop }: {
@@ -483,6 +515,11 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
   const [saving, setSaving] = useState(false);
   const [walking, setWalking] = useState(false);
   const [movement, setMovement] = useState<MovementInput>({ forward:false, backward:false, left:false, right:false });
+  const [orbit, setOrbit] = useState<OrbitSettings>({ yaw:0, height:2.65, distance:3.15 });
+  const [gameFocused, setGameFocused] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const shellRef = useRef<HTMLElement | null>(null);
+  const orbitDrag = useRef<{ x:number; y:number } | null>(null);
   const selected = artworks.find((artwork) => artwork.id === selectedId) || null;
   const decorated = useMemo(() => new Set(owned.filter((item) => item.category === "decor" && (item.item_key === "easel" || activeDecorItemIds.includes(item.id))).map((item) => item.item_key)), [owned, activeDecorItemIds]);
   const ownedFrames = owned.filter((item) => item.category === "frame");
@@ -516,11 +553,45 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
   function pressMovement(key: keyof MovementInput, pressed: boolean) {
     setMovement((current) => current[key] === pressed ? current : { ...current, [key]: pressed });
   }
+  function beginOrbit(event: React.PointerEvent<HTMLElement>) {
+    shellRef.current?.focus({ preventScroll:true });
+    if (mode !== "explore" || (event.target as HTMLElement).tagName !== "CANVAS") return;
+    orbitDrag.current = { x:event.clientX,y:event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moveOrbit(event: React.PointerEvent<HTMLElement>) {
+    if (!orbitDrag.current || mode !== "explore") return;
+    const dx = event.clientX - orbitDrag.current.x;
+    const dy = event.clientY - orbitDrag.current.y;
+    orbitDrag.current = { x:event.clientX,y:event.clientY };
+    setOrbit((current) => ({ ...current, yaw:current.yaw + dx * .007, height:clamp(current.height + dy * .008,1.75,4.05) }));
+  }
+  function endOrbit(event: React.PointerEvent<HTMLElement>) {
+    orbitDrag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+  function zoomExplore(event: React.WheelEvent<HTMLElement>) {
+    if (mode !== "explore") return;
+    event.preventDefault();
+    shellRef.current?.focus({ preventScroll:true });
+    setOrbit((current) => ({ ...current, distance:clamp(current.distance + event.deltaY * .003,1.8,4.8) }));
+  }
+  function toggleExpanded() {
+    setExpanded((value) => !value);
+    window.requestAnimationFrame(() => shellRef.current?.focus({ preventScroll:true }));
+  }
 
-  return <section className="studio-game-shell">
+  useEffect(() => {
+    if (!expanded) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [expanded]);
+
+  return <section ref={shellRef} className={`studio-game-shell ${gameFocused ? "game-focused" : ""} ${expanded ? "game-expanded" : ""}`} tabIndex={0} onFocusCapture={() => setGameFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setGameFocused(false); }} onPointerDown={beginOrbit} onPointerMove={moveOrbit} onPointerUp={endOrbit} onPointerCancel={endOrbit} onWheel={zoomExplore}>
     <div className="studio-game-canvas">
       <Canvas shadows frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0,2.45,8.1], fov: 48, near: .1, far: 40 }} gl={{ antialias: true, powerPreference: "high-performance" }} fallback={<div className="studio-webgl-fallback"><Box /><h2>Your studio is ready, but 3D is unavailable.</h2><p>Turn on hardware acceleration or use a modern browser to enter the room.</p></div>}>
-        <Suspense fallback={<LoadingRoom />}><Scene view={view} name={name} input={movement} onMoving={setWalking} artworks={artworks} catalog={catalog} certificates={certificates} selectedId={selectedId} mode={mode} decorated={decorated} featuredArtwork={featuredArtwork} themeKey={themeKey} onSelect={setSelectedId} onTransform={(id, transform) => setArtworks((current) => current.map((artwork) => artwork.id === id ? { ...artwork, transform } : artwork))} /></Suspense>
+        <Suspense fallback={<LoadingRoom />}><Scene view={view} name={name} input={movement} orbit={orbit} controlsEnabled={gameFocused || expanded} onMoving={setWalking} artworks={artworks} catalog={catalog} certificates={certificates} selectedId={selectedId} mode={mode} decorated={decorated} featuredArtwork={featuredArtwork} themeKey={themeKey} onSelect={setSelectedId} onTransform={(id, transform) => setArtworks((current) => current.map((artwork) => artwork.id === id ? { ...artwork, transform } : artwork))} /></Suspense>
       </Canvas>
     </div>
 
@@ -529,8 +600,8 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
       <div><strong>{name}</strong><span>Artist Level {profile.current_level}</span><div className="studio-level-bar"><i style={{width:`${progress}%`}} /></div><small>{profile.lifetime_xp.toLocaleString()} lifetime XP</small></div>
       <footer><span><Coins /> {profile.gold_brush_balance}</span><span><Paintbrush /> {owned.length}</span></footer>
     </aside>
-    <div className="studio-help">{mode === "explore" ? <Footprints /> : <Move />}<div><strong>{mode === "arrange" ? "Arrange your wall" : walking ? "Walking through your studio" : "Explore your studio"}</strong><span>{mode === "arrange" ? "Select and drag a frame, then save" : "WASD / arrows or the movement pad"}</span></div></div>
-    <div className="studio-top-actions"><button type="button" aria-label="Capture studio view" title="Capture studio view" onClick={() => toast.info("Use your device screenshot to capture this view.")}><Camera /></button><button type="button" aria-label="Studio help" title="Studio help" onClick={() => toast.info("Use WASD or arrow keys to walk and turn. Mobile students can use the movement pad. Arrange mode lets you move and resize artwork.")}><HelpCircle /></button><button type="button" aria-label="Studio menu" title="Studio menu" onClick={onOpenShop}><Menu /></button></div>
+    <div className="studio-help">{mode === "explore" ? <Footprints /> : <Move />}<div><strong>{mode === "arrange" ? "Arrange your wall" : walking ? "Walking through your studio" : gameFocused ? "Game controls active" : "Tap the room to play"}</strong><span>{mode === "arrange" ? "Select and drag a frame, then save" : "Walk with keys · drag to orbit · scroll to zoom"}</span></div></div>
+    <div className="studio-top-actions"><button type="button" aria-label="Capture studio view" title="Capture studio view" onClick={() => toast.info("Use your device screenshot to capture this view.")}><Camera /></button><button type="button" aria-label="Studio help" title="Studio help" onClick={() => toast.info("Tap the room first. Use WASD or arrow keys to walk, drag the room to orbit the camera, and scroll to zoom. Page scrolling stays locked while the game is focused.")}><HelpCircle /></button><button type="button" aria-label={expanded ? "Exit full-screen game" : "Expand game to full screen"} title={expanded ? "Exit full screen" : "Full screen"} aria-pressed={expanded} onClick={toggleExpanded}>{expanded ? <Minimize2 /> : <Maximize2 />}</button><button type="button" aria-label="Studio menu" title="Studio menu" onClick={onOpenShop}><Menu /></button></div>
     <button className="studio-view-arrow previous" type="button" onClick={() => cycle(-1)} aria-label="Previous wall"><ChevronLeft /></button>
     <button className="studio-view-arrow next" type="button" onClick={() => cycle(1)} aria-label="Next wall"><ChevronRight /></button>
     <div className="studio-room-dots">{views.map((item) => <button key={item} className={item === view ? "active" : ""} type="button" onClick={() => setView(item)} aria-label={`View ${item}`} />)}</div>

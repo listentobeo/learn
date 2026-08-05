@@ -46,8 +46,9 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const file = form.get("file");
   const lessonCode = String(form.get("lessonCode") || "");
-  if (!(file instanceof File) || !lessonCode || !file.type.startsWith("image/") || file.size > 10_000_000) {
-    return NextResponse.json({ error: "Please upload an image under 10 MB" }, { status: 400 });
+  const supportedArtworkTypes = new Set(["image/jpeg","image/png","image/webp","image/gif","image/avif"]);
+  if (!(file instanceof File) || !lessonCode || !supportedArtworkTypes.has(file.type) || file.size > 10_000_000) {
+    return NextResponse.json({ error: "Please upload a JPG, PNG, WebP, GIF or AVIF image under 10 MB" }, { status: 400 });
   }
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ assignment: { id: "demo", lesson_code: lessonCode, submitted_at: new Date().toISOString(), seen_at: null, reviewed: false, reviewed_at: null, feedback: null, feedback_at: null }, gameReward: { xp: 40, brushes: 10 }, demo: true });
