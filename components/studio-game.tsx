@@ -216,7 +216,7 @@ function ArtworkFrame3D({ artwork, frameKey, selected, arrange, onSelect, onChan
       </mesh>
       <mesh position={[0, 0, 0.067]}>
         <planeGeometry args={[1.08, 0.85]} />
-        {texture ? <meshStandardMaterial map={texture} roughness={0.73} side={DoubleSide} /> : <meshStandardMaterial color={failed ? "#3c2420" : "#e6dfd0"} roughness={0.9} />}
+        {texture ? <meshBasicMaterial map={texture} side={DoubleSide} toneMapped={false} /> : <meshStandardMaterial color={failed ? "#3c2420" : "#e6dfd0"} roughness={0.9} />}
       </mesh>
       {failed && <MountedLabel lines={["IMAGE UNAVAILABLE","Refresh or upload again"]} position={[0,0,.075]} size={[.9,.32]} background="#3c2420" foreground="#f1d9cf" accent="#d19a83" serif={false} />}
       <MountedLabel lines={[artwork.lessonCode, artwork.title]} position={[0,-.65,.04]} size={[1.08,.25]} serif={false} />
@@ -242,7 +242,7 @@ function Easel({ artwork }: { artwork: GameArtwork | null }) {
   return <group position={[-2.1, 0, -1.9]} rotation={[0,.22,0]}>
     {[-.48,.48].map((x) => <mesh castShadow key={x} position={[x,.95,0]} rotation={[0,0,x*.12]}><boxGeometry args={[.1,1.9,.1]} /><meshStandardMaterial color="#7b4a27" /></mesh>)}
     <mesh castShadow position={[0,1.35,.02]}><boxGeometry args={[1.25,.95,.09]} /><meshStandardMaterial color="#d8cdbb" /></mesh>
-    {texture && <mesh position={[0,1.35,.071]}><planeGeometry args={[1.12,.82]} /><meshStandardMaterial map={texture} /></mesh>}
+    {texture && <mesh position={[0,1.35,.071]}><planeGeometry args={[1.12,.82]} /><meshBasicMaterial map={texture} toneMapped={false} /></mesh>}
     <mesh castShadow position={[0,.9,.13]}><boxGeometry args={[1.45,.12,.3]} /><meshStandardMaterial color="#7b4a27" /></mesh>
   </group>;
 }
@@ -261,6 +261,28 @@ function Sofa() {
     <RoundedBox castShadow args={[2.25,.55,.85]} radius={.12} position={[0,.48,0]}><meshStandardMaterial color="#70442e" roughness={.9} /></RoundedBox>
     <RoundedBox castShadow args={[2.25,.82,.22]} radius={.1} position={[0,.95,-.34]} rotation={[-.1,0,0]}><meshStandardMaterial color="#613825" roughness={.92} /></RoundedBox>
     {[-.9,.9].map((x) => <mesh key={x} castShadow position={[x,.18,0]}><boxGeometry args={[.12,.35,.12]} /><meshStandardMaterial color="#261711" /></mesh>)}
+  </group>;
+}
+
+function FrontRoomWall({ colour }: { colour: string }) {
+  return <group>
+    <mesh receiveShadow position={[0,2.55,4.72]}><boxGeometry args={[12.4,5.1,.22]} /><meshStandardMaterial color={colour} roughness={.92} /></mesh>
+    <group position={[-3.7,0,4.585]} rotation={[0,Math.PI,0]}>
+      <mesh castShadow position={[0,1.42,0]}><boxGeometry args={[1.55,2.84,.1]} /><meshStandardMaterial color="#56321f" roughness={.78} /></mesh>
+      <mesh position={[0,1.42,-.056]}><boxGeometry args={[1.34,2.61,.025]} /><meshStandardMaterial color="#6b4027" roughness={.82} /></mesh>
+      <mesh position={[-.5,1.4,-.09]}><sphereGeometry args={[.065,18,12]} /><meshStandardMaterial color="#c9a84c" metalness={.72} roughness={.25} /></mesh>
+      <MountedLabel lines={["STUDIO"]} position={[0,2.18,-.09]} size={[.58,.2]} serif={false} />
+    </group>
+    <group position={[2.55,2.85,4.585]} rotation={[0,Math.PI,0]}>
+      <mesh><boxGeometry args={[2.35,1.72,.08]} /><meshBasicMaterial color="#9fd0e6" toneMapped={false} /></mesh>
+      <mesh position={[0,0,-.048]}><boxGeometry args={[.085,1.78,.06]} /><meshStandardMaterial color="#d7bd84" /></mesh>
+      <mesh position={[0,0,-.049]}><boxGeometry args={[2.42,.085,.06]} /><meshStandardMaterial color="#d7bd84" /></mesh>
+      <mesh position={[0,0,-.052]}><torusGeometry args={[.31,.06,18,40]} /><meshBasicMaterial color="#ffe69b" toneMapped={false} /></mesh>
+      <mesh position={[-1.38,0,-.1]} rotation={[0,0,-.08]}><planeGeometry args={[.82,2.15,10,10]} /><meshStandardMaterial color="#7f5a3f" side={DoubleSide} roughness={.96} /></mesh>
+      <mesh position={[1.38,0,-.1]} rotation={[0,0,.08]}><planeGeometry args={[.82,2.15,10,10]} /><meshStandardMaterial color="#7f5a3f" side={DoubleSide} roughness={.96} /></mesh>
+      <mesh position={[0,1.12,-.09]}><cylinderGeometry args={[.045,.045,3.4,12]} /><meshStandardMaterial color="#bd9949" metalness={.5} /></mesh>
+    </group>
+    <pointLight position={[2.55,2.85,3.75]} intensity={24} distance={7} color="#ffd98c" />
   </group>;
 }
 
@@ -299,7 +321,7 @@ const easelObstacle = { minX:-2.9,maxX:-1.3,minZ:-2.65,maxZ:-1.15 };
 
 function validPlayerPosition(x: number, z: number, hasEasel: boolean) {
   const radius = .3;
-  if (x < -5.45 || x > 5.45 || z < -3.95 || z > 4.1) return false;
+  if (x < -5.45 || x > 5.45 || z < -3.95 || z > 3.8) return false;
   const obstacles = hasEasel ? [...roomObstacles,easelObstacle] : roomObstacles;
   return !obstacles.some((box) => x + radius > box.minX && x - radius < box.maxX && z + radius > box.minZ && z - radius < box.maxZ);
 }
@@ -442,6 +464,7 @@ function StudioRoom({ artworks, catalog, certificates, selectedId, mode, decorat
     <mesh receiveShadow position={[0,2.55,-4.72]}><boxGeometry args={[12.4,5.1,.22]} /><meshStandardMaterial color={palette.wall} roughness={.91} /></mesh>
     <mesh receiveShadow position={[-6.1,2.55,0]}><boxGeometry args={[.22,5.1,9.5]} /><meshStandardMaterial color={palette.side} roughness={.9} /></mesh>
     <mesh receiveShadow position={[6.1,2.55,0]}><boxGeometry args={[.22,5.1,9.5]} /><meshStandardMaterial color={palette.side} roughness={.9} /></mesh>
+    <FrontRoomWall colour={palette.side} />
     <mesh receiveShadow position={[0,5,0]}><boxGeometry args={[12.4,.18,9.6]} /><meshStandardMaterial color="#382213" roughness={.86} /></mesh>
     {[-4,-2,0,2,4].map((x) => <mesh key={x} castShadow position={[x,4.86,0]}><boxGeometry args={[.16,.28,9.6]} /><meshStandardMaterial color="#21130d" /></mesh>)}
 
@@ -496,7 +519,7 @@ function Scene({ view, name, input, orbit, controlsEnabled, onMoving, ...props }
   return <><CameraRig view={view} active={props.mode === "arrange"} controlsRef={controlsRef} /><StudioRoom {...props} /><CharacterController name={name} active={props.mode === "explore"} controlsEnabled={controlsEnabled} view={view} input={input} orbit={orbit} hasEasel={props.decorated.has("easel")} onMoving={onMoving} /></>;
 }
 
-export function StudioGame({ name, profile, initialArtworks, catalog, owned, activeDecorItemIds, themeKey, certificates, featuredArtworkId, onOpenShop }: {
+export function StudioGame({ name, profile, initialArtworks, catalog, owned, activeDecorItemIds, themeKey, certificates, featuredArtworkId, onFeaturedArtworkChange, onOpenShop }: {
   name: string;
   profile: GamificationProfile;
   initialArtworks: GameArtwork[];
@@ -506,6 +529,7 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
   themeKey: string | null;
   certificates: Array<{ track: string; code: string }>;
   featuredArtworkId: string | null;
+  onFeaturedArtworkChange: (artworkId: string) => Promise<boolean>;
   onOpenShop: () => void;
 }) {
   const [artworks, setArtworks] = useState(() => initialArtworks.map((artwork) => ({ ...artwork, transform: constrainArtwork(artwork.transform) })));
@@ -518,12 +542,13 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
   const [orbit, setOrbit] = useState<OrbitSettings>({ yaw:0, height:2.65, distance:3.15 });
   const [gameFocused, setGameFocused] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [featuredId, setFeaturedId] = useState(featuredArtworkId);
   const shellRef = useRef<HTMLElement | null>(null);
   const orbitDrag = useRef<{ x:number; y:number } | null>(null);
   const selected = artworks.find((artwork) => artwork.id === selectedId) || null;
   const decorated = useMemo(() => new Set(owned.filter((item) => item.category === "decor" && (item.item_key === "easel" || activeDecorItemIds.includes(item.id))).map((item) => item.item_key)), [owned, activeDecorItemIds]);
   const ownedFrames = owned.filter((item) => item.category === "frame");
-  const featuredArtwork = artworks.find((artwork) => artwork.id === featuredArtworkId) || artworks.at(-1) || null;
+  const featuredArtwork = artworks.find((artwork) => artwork.id === featuredId) || artworks.at(-1) || null;
   const totalForLevel = Math.max(250, profile.current_level * 450);
   const progress = Math.min(100, Math.round((profile.lifetime_xp % totalForLevel) / totalForLevel * 100));
 
@@ -580,6 +605,11 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
     setExpanded((value) => !value);
     window.requestAnimationFrame(() => shellRef.current?.focus({ preventScroll:true }));
   }
+  async function chooseCanvasArtwork(artworkId: string) {
+    const previous = featuredId;
+    setFeaturedId(artworkId);
+    if (!await onFeaturedArtworkChange(artworkId)) setFeaturedId(previous);
+  }
 
   useEffect(() => {
     if (!expanded) return;
@@ -600,13 +630,14 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
       <div><strong>{name}</strong><span>Artist Level {profile.current_level}</span><div className="studio-level-bar"><i style={{width:`${progress}%`}} /></div><small>{profile.lifetime_xp.toLocaleString()} lifetime XP</small></div>
       <footer><span><Coins /> {profile.gold_brush_balance}</span><span><Paintbrush /> {owned.length}</span></footer>
     </aside>
+    {decorated.has("easel") && artworks.length > 0 && <label className="canvas-art-picker"><span>Artwork on canvas</span><select value={featuredArtwork?.id || ""} onChange={(event) => void chooseCanvasArtwork(event.target.value)}>{artworks.map((artwork) => <option key={artwork.id} value={artwork.id}>{artwork.lessonCode} · {artwork.title}</option>)}</select></label>}
     <div className="studio-help">{mode === "explore" ? <Footprints /> : <Move />}<div><strong>{mode === "arrange" ? "Arrange your wall" : walking ? "Walking through your studio" : gameFocused ? "Game controls active" : "Tap the room to play"}</strong><span>{mode === "arrange" ? "Select and drag a frame, then save" : "Walk with keys · drag to orbit · scroll to zoom"}</span></div></div>
     <div className="studio-top-actions"><button type="button" aria-label="Capture studio view" title="Capture studio view" onClick={() => toast.info("Use your device screenshot to capture this view.")}><Camera /></button><button type="button" aria-label="Studio help" title="Studio help" onClick={() => toast.info("Tap the room first. Use WASD or arrow keys to walk, drag the room to orbit the camera, and scroll to zoom. Page scrolling stays locked while the game is focused.")}><HelpCircle /></button><button type="button" aria-label={expanded ? "Exit full-screen game" : "Expand game to full screen"} title={expanded ? "Exit full screen" : "Full screen"} aria-pressed={expanded} onClick={toggleExpanded}>{expanded ? <Minimize2 /> : <Maximize2 />}</button><button type="button" aria-label="Studio menu" title="Studio menu" onClick={onOpenShop}><Menu /></button></div>
     <button className="studio-view-arrow previous" type="button" onClick={() => cycle(-1)} aria-label="Previous wall"><ChevronLeft /></button>
     <button className="studio-view-arrow next" type="button" onClick={() => cycle(1)} aria-label="Next wall"><ChevronRight /></button>
     <div className="studio-room-dots">{views.map((item) => <button key={item} className={item === view ? "active" : ""} type="button" onClick={() => setView(item)} aria-label={`View ${item}`} />)}</div>
 
-    {selected && mode === "explore" && <aside className="studio-art-inspector"><button type="button" onClick={() => setSelectedId(null)} aria-label="Close artwork information">×</button><span>{selected.lessonCode} · {selected.track}</span><strong>{selected.title}</strong><small>{selected.reviewed ? "Review complete" : "Awaiting Benjamin's review"}</small>{selected.feedback && <p>{selected.feedback}</p>}</aside>}
+    {selected && mode === "explore" && <aside className="studio-art-inspector"><button type="button" onClick={() => setSelectedId(null)} aria-label="Close artwork information">×</button><span>{selected.lessonCode} · {selected.track}</span><strong>{selected.title}</strong><small>{selected.reviewed ? "Review complete" : "Awaiting Benjamin's review"}</small>{selected.feedback && <p>{selected.feedback}</p>}{decorated.has("easel") && <button className="artwork-to-canvas" type="button" onClick={() => void chooseCanvasArtwork(selected.id)} disabled={selected.id === featuredArtwork?.id}>{selected.id === featuredArtwork?.id ? "Currently on canvas" : "Display on canvas"}</button>}</aside>}
 
     {mode === "arrange" && <div className="arrange-toolbar">
       {selected ? <>

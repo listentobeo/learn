@@ -859,6 +859,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .studio-player-card footer { grid-column:1/-1; display:flex; justify-content:space-between; padding-top:9px; border-top:1px solid rgba(255,255,255,.09); }
 .studio-player-card footer span { display:flex; align-items:center; gap:5px; color:#efe5cf; font-size:10px; }
 .studio-player-card footer svg { width:14px; color:var(--gold); }
+.canvas-art-picker { position:absolute; z-index:6; left:15px; top:155px; width:190px; display:grid; gap:5px; padding:9px 11px; border:1px solid rgba(201,168,76,.32); color:var(--gold); background:rgba(8,11,17,.88); backdrop-filter:blur(10px); }
+.canvas-art-picker span { font-size:7px; text-transform:uppercase; letter-spacing:.08em; }
+.canvas-art-picker select { width:100%; height:30px; padding:0 7px; overflow:hidden; border:1px solid #364052; color:#f1ebdf; background:#111824; font-size:8px; text-overflow:ellipsis; }
 .studio-help { position:absolute; z-index:5; left:50%; top:16px; transform:translateX(-50%); display:flex; align-items:center; gap:10px; min-width:265px; padding:10px 15px; border:1px solid rgba(201,168,76,.25); border-radius:11px; background:rgba(13,16,20,.8); backdrop-filter:blur(12px); color:#eee; }
 .studio-help > svg { color:var(--gold); }
 .studio-help strong,.studio-help span { display:block; }
@@ -922,6 +925,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .studio-art-inspector { position:absolute; z-index:7; right:18px; bottom:82px; width:min(310px,calc(100% - 36px)); padding:16px 40px 16px 17px; border:1px solid rgba(201,168,76,.48); color:var(--ivory); background:rgba(8,11,17,.93); backdrop-filter:blur(14px); box-shadow:0 16px 45px rgba(0,0,0,.45); }
 .studio-art-inspector > button { position:absolute; right:10px; top:9px; width:25px; height:25px; border:1px solid var(--line); border-radius:50%; color:var(--muted); background:transparent; cursor:pointer; }
 .studio-art-inspector > span,.studio-art-inspector > strong,.studio-art-inspector > small { display:block; }.studio-art-inspector > span { color:var(--gold); font-size:8px; text-transform:uppercase; letter-spacing:.08em; }.studio-art-inspector > strong { margin:6px 0; font:500 17px var(--font-serif); }.studio-art-inspector > small { color:var(--muted); font-size:8px; }.studio-art-inspector p { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--line); color:#ccc4b7; font-size:9px; line-height:1.55; }
+.studio-art-inspector .artwork-to-canvas { position:static; width:100%; height:31px; margin-top:10px; border:1px solid var(--gold); border-radius:0; color:#171106; background:var(--gold); font-size:8px; text-transform:uppercase; cursor:pointer; }
+.studio-art-inspector .artwork-to-canvas:disabled { color:var(--muted); border-color:var(--line); background:#111824; cursor:default; }
 .shop-object-preview { position:relative; height:128px; margin:-2px -2px 17px; overflow:hidden; border:1px solid rgba(201,168,76,.2); background:#080c13; }
 .shop-object-preview svg { display:block; width:100%; height:100%; filter:drop-shadow(0 8px 11px rgba(0,0,0,.35)); transition:transform .35s ease; }.shop-item:hover .shop-object-preview svg { transform:scale(1.045); }.shop-object-preview > small { position:absolute; right:7px; bottom:6px; padding:3px 5px; color:#d7c89e; background:rgba(5,8,13,.78); font-size:6px; text-transform:uppercase; letter-spacing:.08em; }
 
@@ -931,7 +936,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .studio-mobile-pad button:active { color:#171006; background:var(--gold); }
   .studio-mobile-pad .pad-up { grid-column:2;grid-row:1; }.studio-mobile-pad .pad-left { grid-column:1;grid-row:2; }.studio-mobile-pad .pad-center { grid-column:2;grid-row:2;border:1px solid rgba(201,168,76,.45); }.studio-mobile-pad .pad-right { grid-column:3;grid-row:2; }.studio-mobile-pad .pad-down { grid-column:2;grid-row:3; }
   .studio-art-inspector { right:10px; bottom:82px; width:min(270px,calc(100% - 140px)); }
+  .canvas-art-picker { left:8px;top:150px;width:165px; }
 }
 @media (max-width:520px) {
   .studio-mobile-pad { left:8px;bottom:74px;transform:scale(.88);transform-origin:left bottom; }.studio-art-inspector { right:7px;bottom:78px;width:calc(100% - 122px);padding:12px 32px 12px 12px; }.studio-art-inspector > strong { font-size:14px; }.shop-object-preview { height:145px; }
+  .canvas-art-picker { top:127px;width:148px;padding:7px; }.canvas-art-picker span { display:none; }.canvas-art-picker select { height:28px; }
 }

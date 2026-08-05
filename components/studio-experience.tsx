@@ -148,7 +148,7 @@ export function StudioExperience({ name, initialProfile, artworks, catalog, init
       <div className="studio-intro-stats"><span><Coins /> {profile.gold_brush_balance} brushes</span><span><Award /> Level {profile.current_level}</span></div>
     </section>
 
-    <StudioGame name={name} profile={profile} initialArtworks={studioArtworks} catalog={catalog} owned={owned} activeDecorItemIds={[...placedIds]} themeKey={activeThemeKey} certificates={certificates} featuredArtworkId={layout.featuredArtworkId} onOpenShop={() => shopRef.current?.scrollIntoView({ behavior: "smooth" })} />
+    <StudioGame name={name} profile={profile} initialArtworks={studioArtworks} catalog={catalog} owned={owned} activeDecorItemIds={[...placedIds]} themeKey={activeThemeKey} certificates={certificates} featuredArtworkId={layout.featuredArtworkId} onFeaturedArtworkChange={(artworkId) => persistLayout({ ...layout, featuredArtworkId: artworkId }, "Canvas artwork updated.")} onOpenShop={() => shopRef.current?.scrollIntoView({ behavior: "smooth" })} />
 
     {enabled ? <section className="reward-shop studio-3d-shop" id="reward-shop" ref={shopRef}>
       <div className="shop-heading"><div><span className="eyebrow">Spend what practice earns</span><h2>Reward Shop.</h2><p>Every item now has a purpose: frames style real work, decor appears inside the room, themes change its atmosphere, and practice packs open in Resources.</p></div><div className="shop-balance"><Coins /><strong>{profile.gold_brush_balance}</strong><span>available</span></div></div>
