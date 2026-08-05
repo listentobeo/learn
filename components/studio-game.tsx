@@ -3,7 +3,7 @@
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CameraControls, ContactShadows, Html, RoundedBox, useProgress } from "@react-three/drei";
 import type { CameraControls as CameraControlsImpl } from "@react-three/drei";
-import { Award, Box, Camera, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Coins, Footprints, HelpCircle, Maximize2, Menu, Minimize2, Minus, Move, Paintbrush, Plus, RotateCcw, Save, ShoppingCart, Sparkles } from "lucide-react";
+import { Award, Box, Camera, ChevronLeft, ChevronRight, Coins, Footprints, HelpCircle, Maximize2, Menu, Minimize2, Minus, Move, Paintbrush, Plus, RotateCcw, RotateCw, Save, ShoppingCart, Sparkles } from "lucide-react";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasTexture, ClampToEdgeWrapping, Color, DoubleSide, Group, LinearFilter, MathUtils, Mesh, SRGBColorSpace, Texture, TextureLoader, Vector3 } from "three";
 import { toast } from "sonner";
@@ -33,7 +33,7 @@ export type GameArtwork = {
 type CameraView = "overview" | StudioWallId | "certificates";
 type Mode = "explore" | "arrange";
 type MovementInput = { forward: boolean; backward: boolean; left: boolean; right: boolean };
-type OrbitSettings = { yaw: number; height: number; distance: number };
+type OrbitSettings = { yaw: number; pitch: number; distance: number };
 
 const views: CameraView[] = ["overview", "wall-a", "wall-b", "wall-c", "certificates"];
 const wallCenters: Record<StudioWallId, number> = { "wall-a": -3.35, "wall-b": 0, "wall-c": 3.35 };
@@ -281,6 +281,8 @@ function FrontRoomWall({ colour }: { colour: string }) {
       <mesh position={[-1.38,0,-.1]} rotation={[0,0,-.08]}><planeGeometry args={[.82,2.15,10,10]} /><meshStandardMaterial color="#7f5a3f" side={DoubleSide} roughness={.96} /></mesh>
       <mesh position={[1.38,0,-.1]} rotation={[0,0,.08]}><planeGeometry args={[.82,2.15,10,10]} /><meshStandardMaterial color="#7f5a3f" side={DoubleSide} roughness={.96} /></mesh>
       <mesh position={[0,1.12,-.09]}><cylinderGeometry args={[.045,.045,3.4,12]} /><meshStandardMaterial color="#bd9949" metalness={.5} /></mesh>
+      <mesh position={[0,.93,-.075]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.13,.13,2.7,20]} /><meshStandardMaterial color="#d9ccb1" roughness={.88} /></mesh>
+      {Array.from({ length:5 }).map((_,index) => <mesh key={index} position={[0,.68-index*.17,-.07]}><boxGeometry args={[2.45,.055,.035]} /><meshStandardMaterial color="#d9ccb1" roughness={.9} /></mesh>)}
     </group>
     <pointLight position={[2.55,2.85,3.75]} intensity={24} distance={7} color="#ffd98c" />
   </group>;
@@ -421,8 +423,10 @@ function CharacterController({ name, active, controlsEnabled, view, input, orbit
     if (leftLeg.current) leftLeg.current.rotation.x = MathUtils.lerp(leftLeg.current.rotation.x,-swing,.25);
     if (rightLeg.current) rightLeg.current.rotation.x = MathUtils.lerp(rightLeg.current.rotation.x,swing,.25);
     const cameraAngle = rotation.current + orbit.yaw;
-    const behind = new Vector3(Math.sin(cameraAngle) * orbit.distance,orbit.height,Math.cos(cameraAngle) * orbit.distance).add(current.current);
+    const horizontalDistance = Math.cos(orbit.pitch) * orbit.distance;
+    const behind = new Vector3(Math.sin(cameraAngle) * horizontalDistance,1.35 + Math.sin(orbit.pitch) * orbit.distance,Math.cos(cameraAngle) * horizontalDistance).add(current.current);
     behind.x = clamp(behind.x,-5.65,5.65);
+    behind.y = clamp(behind.y,.65,4.55);
     behind.z = clamp(behind.z,-4.25,4.45);
     state.camera.position.lerp(behind,1-Math.pow(.001,delta));
     state.camera.lookAt(current.current.x,1.42,current.current.z);
@@ -464,7 +468,7 @@ function StudioRoom({ artworks, catalog, certificates, selectedId, mode, decorat
     <mesh receiveShadow position={[0,2.55,-4.72]}><boxGeometry args={[12.4,5.1,.22]} /><meshStandardMaterial color={palette.wall} roughness={.91} /></mesh>
     <mesh receiveShadow position={[-6.1,2.55,0]}><boxGeometry args={[.22,5.1,9.5]} /><meshStandardMaterial color={palette.side} roughness={.9} /></mesh>
     <mesh receiveShadow position={[6.1,2.55,0]}><boxGeometry args={[.22,5.1,9.5]} /><meshStandardMaterial color={palette.side} roughness={.9} /></mesh>
-    <FrontRoomWall colour={palette.side} />
+    {mode !== "arrange" && <FrontRoomWall colour={palette.side} />}
     <mesh receiveShadow position={[0,5,0]}><boxGeometry args={[12.4,.18,9.6]} /><meshStandardMaterial color="#382213" roughness={.86} /></mesh>
     {[-4,-2,0,2,4].map((x) => <mesh key={x} castShadow position={[x,4.86,0]}><boxGeometry args={[.16,.28,9.6]} /><meshStandardMaterial color="#21130d" /></mesh>)}
 
@@ -539,12 +543,20 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
   const [saving, setSaving] = useState(false);
   const [walking, setWalking] = useState(false);
   const [movement, setMovement] = useState<MovementInput>({ forward:false, backward:false, left:false, right:false });
-  const [orbit, setOrbit] = useState<OrbitSettings>({ yaw:0, height:2.65, distance:3.15 });
+  const [orbit, setOrbit] = useState<OrbitSettings>(() => ({
+    yaw:0,
+    pitch:.43,
+    distance:typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 5.15 : 3.15,
+  }));
   const [gameFocused, setGameFocused] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [portraitMobile, setPortraitMobile] = useState(false);
+  const [mobileGame, setMobileGame] = useState(false);
+  const [joystickOffset, setJoystickOffset] = useState({ x:0,y:0 });
   const [featuredId, setFeaturedId] = useState(featuredArtworkId);
   const shellRef = useRef<HTMLElement | null>(null);
   const orbitDrag = useRef<{ x:number; y:number } | null>(null);
+  const joystickPointer = useRef<number | null>(null);
   const selected = artworks.find((artwork) => artwork.id === selectedId) || null;
   const decorated = useMemo(() => new Set(owned.filter((item) => item.category === "decor" && (item.item_key === "easel" || activeDecorItemIds.includes(item.id))).map((item) => item.item_key)), [owned, activeDecorItemIds]);
   const ownedFrames = owned.filter((item) => item.category === "frame");
@@ -575,9 +587,6 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
     updateSelected({ wallId });
     setView(wallId);
   }
-  function pressMovement(key: keyof MovementInput, pressed: boolean) {
-    setMovement((current) => current[key] === pressed ? current : { ...current, [key]: pressed });
-  }
   function beginOrbit(event: React.PointerEvent<HTMLElement>) {
     shellRef.current?.focus({ preventScroll:true });
     if (mode !== "explore" || (event.target as HTMLElement).tagName !== "CANVAS") return;
@@ -589,7 +598,7 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
     const dx = event.clientX - orbitDrag.current.x;
     const dy = event.clientY - orbitDrag.current.y;
     orbitDrag.current = { x:event.clientX,y:event.clientY };
-    setOrbit((current) => ({ ...current, yaw:current.yaw + dx * .007, height:clamp(current.height + dy * .008,1.75,4.05) }));
+    setOrbit((current) => ({ ...current, yaw:current.yaw + dx * .007, pitch:clamp(current.pitch - dy * .0055,-.32,1.02) }));
   }
   function endOrbit(event: React.PointerEvent<HTMLElement>) {
     orbitDrag.current = null;
@@ -599,11 +608,46 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
     if (mode !== "explore") return;
     event.preventDefault();
     shellRef.current?.focus({ preventScroll:true });
-    setOrbit((current) => ({ ...current, distance:clamp(current.distance + event.deltaY * .003,1.8,4.8) }));
+    setOrbit((current) => ({ ...current, distance:clamp(current.distance + event.deltaY * .003,1.8,6) }));
   }
-  function toggleExpanded() {
-    setExpanded((value) => !value);
+  async function toggleExpanded() {
+    const entering = !expanded;
+    setExpanded(entering);
+    if (entering) {
+      try { await shellRef.current?.requestFullscreen?.(); } catch {}
+      try { await (screen.orientation as ScreenOrientation & { lock?: (orientation:"landscape") => Promise<void> }).lock?.("landscape"); } catch {}
+    } else {
+      try { (screen.orientation as ScreenOrientation & { unlock?: () => void }).unlock?.(); } catch {}
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+    }
     window.requestAnimationFrame(() => shellRef.current?.focus({ preventScroll:true }));
+  }
+  function moveJoystick(event: React.PointerEvent<HTMLDivElement>) {
+    if (joystickPointer.current !== event.pointerId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const rawX = event.clientX - (rect.left + rect.width / 2);
+    const rawY = event.clientY - (rect.top + rect.height / 2);
+    const radius = rect.width * .31;
+    const magnitude = Math.hypot(rawX,rawY) || 1;
+    const ratio = Math.min(1,radius / magnitude);
+    const x = rawX * ratio;
+    const y = rawY * ratio;
+    setJoystickOffset({ x,y });
+    setMovement({ forward:y < -radius*.22, backward:y > radius*.22, left:x < -radius*.22, right:x > radius*.22 });
+  }
+  function startJoystick(event: React.PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    joystickPointer.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    moveJoystick(event);
+  }
+  function stopJoystick(event: React.PointerEvent<HTMLDivElement>) {
+    if (joystickPointer.current !== event.pointerId) return;
+    joystickPointer.current = null;
+    setJoystickOffset({ x:0,y:0 });
+    setMovement({ forward:false,backward:false,left:false,right:false });
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }
   async function chooseCanvasArtwork(artworkId: string) {
     const previous = featuredId;
@@ -618,12 +662,37 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
     return () => { document.body.style.overflow = previous; };
   }, [expanded]);
 
+  useEffect(() => {
+    const query = window.matchMedia("(orientation: portrait) and (pointer: coarse)");
+    const update = () => setPortraitMobile(query.matches);
+    update();
+    query.addEventListener("change",update);
+    return () => query.removeEventListener("change",update);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(pointer: coarse)");
+    const update = () => setMobileGame(query.matches);
+    update();
+    query.addEventListener("change",update);
+    return () => query.removeEventListener("change",update);
+  }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) setExpanded(false);
+    };
+    document.addEventListener("fullscreenchange",onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange",onFullscreenChange);
+  }, []);
+
   return <section ref={shellRef} className={`studio-game-shell ${gameFocused ? "game-focused" : ""} ${expanded ? "game-expanded" : ""}`} tabIndex={0} onFocusCapture={() => setGameFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setGameFocused(false); }} onPointerDown={beginOrbit} onPointerMove={moveOrbit} onPointerUp={endOrbit} onPointerCancel={endOrbit} onWheel={zoomExplore}>
     <div className="studio-game-canvas">
-      <Canvas shadows frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0,2.45,8.1], fov: 48, near: .1, far: 40 }} gl={{ antialias: true, powerPreference: "high-performance" }} fallback={<div className="studio-webgl-fallback"><Box /><h2>Your studio is ready, but 3D is unavailable.</h2><p>Turn on hardware acceleration or use a modern browser to enter the room.</p></div>}>
+      <Canvas shadows frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0,2.45,8.1], fov:mobileGame ? 62 : 48, near: .1, far: 40 }} gl={{ antialias: true, powerPreference: "high-performance" }} fallback={<div className="studio-webgl-fallback"><Box /><h2>Your studio is ready, but 3D is unavailable.</h2><p>Turn on hardware acceleration or use a modern browser to enter the room.</p></div>}>
         <Suspense fallback={<LoadingRoom />}><Scene view={view} name={name} input={movement} orbit={orbit} controlsEnabled={gameFocused || expanded} onMoving={setWalking} artworks={artworks} catalog={catalog} certificates={certificates} selectedId={selectedId} mode={mode} decorated={decorated} featuredArtwork={featuredArtwork} themeKey={themeKey} onSelect={setSelectedId} onTransform={(id, transform) => setArtworks((current) => current.map((artwork) => artwork.id === id ? { ...artwork, transform } : artwork))} /></Suspense>
       </Canvas>
     </div>
+    {portraitMobile && <div className="studio-landscape-prompt"><RotateCw /><strong>Turn your phone sideways</strong><span>Your studio is designed for landscape play.</span>{!expanded && <button type="button" onClick={() => void toggleExpanded()}>Open landscape game</button>}</div>}
 
     <aside className="studio-player-card">
       <div className="studio-avatar">{name.split(" ").map((part) => part[0]).slice(0,2).join("")}</div>
@@ -631,8 +700,8 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
       <footer><span><Coins /> {profile.gold_brush_balance}</span><span><Paintbrush /> {owned.length}</span></footer>
     </aside>
     {decorated.has("easel") && artworks.length > 0 && <label className="canvas-art-picker"><span>Artwork on canvas</span><select value={featuredArtwork?.id || ""} onChange={(event) => void chooseCanvasArtwork(event.target.value)}>{artworks.map((artwork) => <option key={artwork.id} value={artwork.id}>{artwork.lessonCode} · {artwork.title}</option>)}</select></label>}
-    <div className="studio-help">{mode === "explore" ? <Footprints /> : <Move />}<div><strong>{mode === "arrange" ? "Arrange your wall" : walking ? "Walking through your studio" : gameFocused ? "Game controls active" : "Tap the room to play"}</strong><span>{mode === "arrange" ? "Select and drag a frame, then save" : "Walk with keys · drag to orbit · scroll to zoom"}</span></div></div>
-    <div className="studio-top-actions"><button type="button" aria-label="Capture studio view" title="Capture studio view" onClick={() => toast.info("Use your device screenshot to capture this view.")}><Camera /></button><button type="button" aria-label="Studio help" title="Studio help" onClick={() => toast.info("Tap the room first. Use WASD or arrow keys to walk, drag the room to orbit the camera, and scroll to zoom. Page scrolling stays locked while the game is focused.")}><HelpCircle /></button><button type="button" aria-label={expanded ? "Exit full-screen game" : "Expand game to full screen"} title={expanded ? "Exit full screen" : "Full screen"} aria-pressed={expanded} onClick={toggleExpanded}>{expanded ? <Minimize2 /> : <Maximize2 />}</button><button type="button" aria-label="Studio menu" title="Studio menu" onClick={onOpenShop}><Menu /></button></div>
+    <div className="studio-help">{mode === "explore" ? <Footprints /> : <Move />}<div><strong>{mode === "arrange" ? "Arrange your wall" : walking ? "Walking through your studio" : gameFocused ? "Game controls active" : "Tap the room to play"}</strong><span>{mode === "arrange" ? "Select and drag a frame, then save" : "Walk with keys or joystick · drag to look · scroll to zoom"}</span></div></div>
+    <div className="studio-top-actions"><button type="button" aria-label="Capture studio view" title="Capture studio view" onClick={() => toast.info("Use your device screenshot to capture this view.")}><Camera /></button><button type="button" aria-label="Studio help" title="Studio help" onClick={() => toast.info("Tap the room first. Use WASD or the joystick to walk, drag anywhere in the room to look up, down, and around, and scroll to zoom.")}><HelpCircle /></button><button type="button" aria-label={expanded ? "Exit full-screen game" : "Expand game to full screen"} title={expanded ? "Exit full screen" : "Full screen"} aria-pressed={expanded} onClick={() => void toggleExpanded()}>{expanded ? <Minimize2 /> : <Maximize2 />}</button><button type="button" aria-label="Studio menu" title="Studio menu" onClick={onOpenShop}><Menu /></button></div>
     <button className="studio-view-arrow previous" type="button" onClick={() => cycle(-1)} aria-label="Previous wall"><ChevronLeft /></button>
     <button className="studio-view-arrow next" type="button" onClick={() => cycle(1)} aria-label="Next wall"><ChevronRight /></button>
     <div className="studio-room-dots">{views.map((item) => <button key={item} className={item === view ? "active" : ""} type="button" onClick={() => setView(item)} aria-label={`View ${item}`} />)}</div>
@@ -658,12 +727,8 @@ export function StudioGame({ name, profile, initialArtworks, catalog, owned, act
       <button type="button" onClick={onOpenShop}><ShoppingCart /> Shop</button>
       <button type="button" onClick={() => setView("certificates")}><Award /> Awards</button>
     </nav>
-    {mode === "explore" && <div className="studio-mobile-pad" aria-label="Move around the studio">
-      <button className="pad-up" onPointerDown={() => pressMovement("forward",true)} onPointerUp={() => pressMovement("forward",false)} onPointerLeave={() => pressMovement("forward",false)} aria-label="Walk forward"><ChevronUp /></button>
-      <button className="pad-left" onPointerDown={() => pressMovement("left",true)} onPointerUp={() => pressMovement("left",false)} onPointerLeave={() => pressMovement("left",false)} aria-label="Turn left"><ChevronLeft /></button>
-      <button className="pad-center" type="button" onClick={() => setView("overview")} aria-label="Return to studio entrance"><Footprints /></button>
-      <button className="pad-right" onPointerDown={() => pressMovement("right",true)} onPointerUp={() => pressMovement("right",false)} onPointerLeave={() => pressMovement("right",false)} aria-label="Turn right"><ChevronRight /></button>
-      <button className="pad-down" onPointerDown={() => pressMovement("backward",true)} onPointerUp={() => pressMovement("backward",false)} onPointerLeave={() => pressMovement("backward",false)} aria-label="Walk backward"><ChevronDown /></button>
+    {mode === "explore" && <div className="studio-joystick" role="application" aria-label="Drag and hold to move around the studio" onPointerDown={startJoystick} onPointerMove={moveJoystick} onPointerUp={stopJoystick} onPointerCancel={stopJoystick}>
+      <div className="studio-joystick-knob" style={{ transform:`translate(${joystickOffset.x}px,${joystickOffset.y}px)` }}><Footprints /></div>
     </div>}
   </section>;
 }
