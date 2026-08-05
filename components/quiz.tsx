@@ -1,9 +1,10 @@
 "use client";
 
-import { CheckCircle2, Coins, Sparkles, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { QuizQuestion } from "@/lib/types";
+import { QuizRewardReveal } from "@/components/quiz-reward-reveal";
 
 type AnswerKey = "a" | "b" | "c" | "d";
 type ReviewItem = {
@@ -28,6 +29,9 @@ export function Quiz({
   const [attempt, setAttempt] = useState(1);
   const [review, setReview] = useState<ReviewItem[]>([]);
   const [gameRewards, setGameRewards] = useState<Array<{ label: string; xp: number; brushes: number }>>([]);
+  const [previousBest, setPreviousBest] = useState(0);
+  const [gameProfile, setGameProfile] = useState<{ lifetime_xp: number; gold_brush_balance: number; current_level: number } | null>(null);
+  const [showReview, setShowReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const complete = useMemo(() => questions.every((question) => answers[question.id]), [answers, questions]);
 
@@ -50,6 +54,9 @@ export function Quiz({
       setAttempt(result.attempt ?? attempt);
       setReview(result.review || []);
       setGameRewards(result.gameRewards || []);
+      setPreviousBest(result.previousBest || 0);
+      setGameProfile(result.gameProfile || null);
+      setShowReview(false);
     } catch {
       toast.error("Your connection changed while submitting. Check your network and try again.");
     } finally {
@@ -62,15 +69,16 @@ export function Quiz({
     setScore(null);
     setReview([]);
     setGameRewards([]);
+    setShowReview(false);
   }
 
   if (score !== null) {
+    if (!showReview) return <QuizRewardReveal score={score} total={questions.length} attempt={attempt} rewards={gameRewards} previousBest={previousBest} profile={gameProfile} onReview={() => setShowReview(true)} onRetake={retake} />;
     return (
       <section className="quiz surface">
         <div className="eyebrow">Attempt {attempt} complete</div>
         <h2 style={{ fontSize: 35, marginTop: 18 }}>You scored {score} / {questions.length}</h2>
         <p className="subtle">{score === questions.length ? "Excellent work. Every answer is correct." : "Review each correction below. You can retake the quiz or continue when the answers make sense."}</p>
-        {gameRewards.length > 0 && <div className="lesson-reward-reveal"><strong>Studio rewards earned</strong>{gameRewards.map((reward) => <div key={reward.label}><small>{reward.label}</small><span><Sparkles size={16} /> +{reward.xp} XP</span><span><Coins size={16} /> +{reward.brushes} Gold Brushes</span></div>)}</div>}
         <div className="quiz-review">
           {questions.map((question, index) => {
             const result = review.find((item) => item.questionId === question.id);

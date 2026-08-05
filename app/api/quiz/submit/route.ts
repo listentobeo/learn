@@ -27,7 +27,11 @@ export async function POST(request: Request) {
       explanation: "",
     }));
     const score = review.filter((item) => item.isCorrect).length;
-    return NextResponse.json({ score, attempt: 1, review, gameRewards: [{ label: "Knowledge check complete", xp: 20, brushes: 5 }, ...(score === 3 ? [{ label: "Full-score mastery", xp: 20, brushes: 7 }] : [])], demo: true });
+    return NextResponse.json({ score, attempt: 1, review, previousBest: 0, newBest: score, gameRewards: [
+      { label: "Quiz complete", xp: 5, brushes: 0 },
+      ...(score > 0 ? [{ label: `${score} answer milestone${score === 1 ? "" : "s"}`, xp: score * 5, brushes: score }] : []),
+      ...(score === 3 ? [{ label: "Perfect-score mastery", xp: 15, brushes: 3 }] : []),
+    ], gameProfile: { lifetime_xp: 420 + 5 + score * 5 + (score === 3 ? 15 : 0), gold_brush_balance: 75 + score + (score === 3 ? 3 : 0), current_level: 2 }, demo: true });
   }
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -55,11 +59,17 @@ export async function POST(request: Request) {
   });
   const result = data as { attempt?: number; score?: number };
   const prior = priorSubmissions || [];
+  const previousBest = prior.reduce((best, row) => Math.max(best, Number(row.score || 0)), 0);
+  const newBest = Math.max(previousBest, Number(result.score || 0));
   const gameRewards: Array<{ label: string; xp: number; brushes: number }> = [];
-  if (rewardSetting?.enabled !== false && !prior.length) gameRewards.push({ label: "Knowledge check complete", xp: 20, brushes: 5 });
-  if (rewardSetting?.enabled !== false && result.score === 3 && !prior.some((row) => row.score === 3)) {
-    gameRewards.push({ label: "Full-score mastery", xp: 20, brushes: 7 });
-    if (prior.some((row) => row.score < 3)) gameRewards.push({ label: "Corrections mastered", xp: 10, brushes: 3 });
+  if (rewardSetting?.enabled !== false && !prior.length) gameRewards.push({ label: "Quiz complete", xp: 5, brushes: 0 });
+  if (rewardSetting?.enabled !== false && newBest > previousBest) {
+    const gained = newBest - previousBest;
+    gameRewards.push({ label: `${gained} new answer milestone${gained === 1 ? "" : "s"}`, xp: gained * 5, brushes: gained });
   }
-  return NextResponse.json({ ...result, gameRewards });
+  if (rewardSetting?.enabled !== false && result.score === 3 && previousBest < 3) {
+    gameRewards.push({ label: "Perfect-score mastery", xp: 15, brushes: 3 });
+  }
+  const { data: gameProfile } = await supabase.from("gamification_profiles").select("lifetime_xp,gold_brush_balance,current_level").eq("student_id", user.id).maybeSingle();
+  return NextResponse.json({ ...result, previousBest, newBest, gameRewards, gameProfile });
 }

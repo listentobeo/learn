@@ -26,7 +26,7 @@ export default async function StudioPage() {
       const [{ data: profileRow }, assignmentResult, displayResult, catalogResult, inventoryResult, studioResult, certificateResult, summary] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("assignments").select("id,lesson_code,file_path,submitted_at,reviewed,feedback,lessons(track,title)").eq("student_id", user.id).order("submitted_at"),
-        supabase.from("studio_displays").select("assignment_id,frame_item_id,wall_slot").eq("student_id", user.id).order("wall_slot"),
+        supabase.from("studio_displays").select("assignment_id,frame_item_id,wall_slot,wall_id,position_x,position_y,scale,rotation_z").eq("student_id", user.id).order("wall_slot"),
         supabase.from("studio_catalog_items").select("id,item_key,category,name,description,price,minimum_level,visual_config,active,sort_order").eq("active", true).order("sort_order"),
         supabase.from("student_inventory").select("id,item:studio_catalog_items(id,item_key,category,name,description,price,minimum_level,visual_config,active,sort_order)").eq("student_id", user.id),
         supabase.from("student_studios").select("selected_theme_id,layout_config").eq("student_id", user.id).maybeSingle(),
@@ -38,8 +38,9 @@ export default async function StudioPage() {
       gameProfile = summary.profile;
       gameEnabled = summary.enabled;
       catalog = (catalogResult.data || []) as StudioCatalogItem[];
-      const displays = new Map((displayResult.data || []).map((display) => [display.assignment_id, display.frame_item_id]));
-      for (const assignment of assignmentResult.data || []) {
+      const displays = new Map((displayResult.data || []).map((display) => [display.assignment_id, display]));
+      for (const [index, assignment] of (assignmentResult.data || []).entries()) {
+        const wallCell = Math.floor(index / 3);
         const relation = assignment.lessons as unknown as { track: string; title: string } | { track: string; title: string }[];
         const lesson = Array.isArray(relation) ? relation[0] : relation;
         const { data: signed } = await supabase.storage.from("assignments").createSignedUrl(assignment.file_path, 60 * 60);
@@ -52,7 +53,14 @@ export default async function StudioPage() {
           submittedAt: assignment.submitted_at,
           reviewed: assignment.reviewed,
           feedback: assignment.feedback,
-          frameItemId: displays.get(assignment.id) || null,
+          frameItemId: displays.get(assignment.id)?.frame_item_id || null,
+          transform: {
+            wallId: (displays.get(assignment.id)?.wall_id || `wall-${String.fromCharCode(97 + index % 3)}`) as "wall-a" | "wall-b" | "wall-c",
+            positionX: Number(displays.get(assignment.id)?.position_x ?? [-1.2, -.4, .4, 1.2][wallCell % 4]),
+            positionY: Number(displays.get(assignment.id)?.position_y ?? [3.35, 2.35, 1.35][Math.floor(wallCell / 4) % 3]),
+            scale: Number(displays.get(assignment.id)?.scale ?? .66),
+            rotationZ: Number(displays.get(assignment.id)?.rotation_z ?? 0),
+          },
         });
       }
       owned = (inventoryResult.data || []).map((inventory) => {
