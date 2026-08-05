@@ -23,7 +23,7 @@ export default async function StudioPage() {
   if (supabase) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const [{ data: profileRow }, assignmentResult, displayResult, catalogResult, inventoryResult, studioResult, certificateResult, summary] = await Promise.all([
+      const [{ data: profileRow }, assignmentResult, displayResult, catalogResult, inventoryResult, studioResult, certificateResult, storageResult, summary] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("assignments").select("id,lesson_code,file_path,submitted_at,reviewed,feedback,lessons(track,title)").eq("student_id", user.id).order("submitted_at"),
         supabase.from("studio_displays").select("assignment_id,frame_item_id,wall_slot,wall_id,position_x,position_y,scale,rotation_z").eq("student_id", user.id).order("wall_slot"),
@@ -31,6 +31,7 @@ export default async function StudioPage() {
         supabase.from("student_inventory").select("id,item:studio_catalog_items(id,item_key,category,name,description,price,minimum_level,visual_config,active,sort_order)").eq("student_id", user.id),
         supabase.from("student_studios").select("selected_theme_id,layout_config").eq("student_id", user.id).maybeSingle(),
         supabase.from("certificates").select("track,certificate_code").eq("student_id", user.id).order("issued_at"),
+        supabase.storage.from("assignments").list(user.id, { limit: 1000 }),
         getGamificationSummary(supabase, user.id),
       ]);
       if (profileRow) profile = profileRow as Profile;
@@ -39,17 +40,18 @@ export default async function StudioPage() {
       gameEnabled = summary.enabled;
       catalog = (catalogResult.data || []) as StudioCatalogItem[];
       const displays = new Map((displayResult.data || []).map((display) => [display.assignment_id, display]));
-      for (const [index, assignment] of (assignmentResult.data || []).entries()) {
+      const storedArtworkPaths = new Set((storageResult.data || []).filter((file) => file.id && !file.name.startsWith(".")).map((file) => `${user.id}/${file.name}`));
+      const realAssignments = (assignmentResult.data || []).filter((assignment) => storedArtworkPaths.has(assignment.file_path));
+      for (const [index, assignment] of realAssignments.entries()) {
         const wallCell = Math.floor(index / 3);
         const relation = assignment.lessons as unknown as { track: string; title: string } | { track: string; title: string }[];
         const lesson = Array.isArray(relation) ? relation[0] : relation;
-        const { data: signed } = await supabase.storage.from("assignments").createSignedUrl(assignment.file_path, 60 * 60);
         artworks.push({
           id: assignment.id,
           lessonCode: assignment.lesson_code,
           title: lesson?.title || "Practical assignment",
           track: lesson?.track || profile.track,
-          imageUrl: signed?.signedUrl || null,
+          imageUrl: `/api/studio/artwork/${assignment.id}`,
           submittedAt: assignment.submitted_at,
           reviewed: assignment.reviewed,
           feedback: assignment.feedback,

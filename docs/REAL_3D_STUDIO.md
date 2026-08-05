@@ -11,15 +11,21 @@ The Personal Studio is rendered inside the existing Next.js student app with Rea
 5. Explore mode supports orbit, pan, zoom and five camera destinations.
 6. Arrange mode supports drag, wall transfer, resize, rotation and owned-frame selection.
 7. Saved transforms are checked against the signed-in student's assignment and inventory in Supabase.
+8. Explore mode also provides third-person WASD/arrow movement, an on-screen mobile pad, walking animation, furniture collision and a constrained follow camera.
+9. Wall signs, artwork captions, certificates and the student's jacket name are canvas textures mounted on real meshes, so they obey perspective and occlusion.
+10. Only genuine Storage-backed assignment uploads enter the gallery. An authenticated same-origin route streams each image into its frame.
 
 ## Database deployment
 
 Run `supabase/migrations/20260806_real_3d_studio_and_score_rewards.sql` after the two earlier gamification migrations. It adds 3D transform columns, backfills up to 36 unique gallery positions, exposes the secure transform RPC and changes future quiz rewards to score/improvement-based awards.
 
+Then run `supabase/migrations/20260807_constrain_3d_studio_artwork.sql`. It prevents students from saving a resized or rotated frame outside its wall panel.
+
 ## Controls
 
-- Desktop: drag to look around; scroll to zoom; use the edge arrows or room dots for wall presets.
-- Mobile: drag/pinch the scene or use the three-button camera pad.
+- Desktop Explore: use WASD or the arrow keys to walk and turn. Edge arrows and room dots provide fast travel.
+- Mobile Explore: use the five-button movement pad. Room dots provide fast travel.
+- Arrange: orbit and zoom the camera to inspect the gallery.
 - Arrange: select an artwork, drag it, or use the toolbar for fine positioning; press Save to persist it.
 
 The Canvas has a non-WebGL fallback. Device pixel ratio is capped at 1.5, shadows are limited, and 3D code is dynamically loaded only on the Studio route.

@@ -29,6 +29,7 @@ The app runs in a polished demo mode when Supabase and Paystack keys are absent.
 11. Run `supabase/migrations/20260804_gamified_personal_studio.sql` to launch Studio XP, Gold Brushes, Personal Studios, the Reward Shop, achievements, historical backfill and Benjamin's reward controls.
 12. Run `supabase/migrations/20260805_quiz_rewards_and_immersive_studio.sql` to move rewards fully into quiz completion/corrections, retire the separate pre-quiz challenge, and enable persistent three-wall room layouts.
 13. Run `supabase/migrations/20260806_real_3d_studio_and_score_rewards.sql` to enable the WebGL room, secure frame transforms and score-based quiz reward milestones.
+14. Run `supabase/migrations/20260807_constrain_3d_studio_artwork.sql` for the third-person studio controller and bounded wall layouts.
 
 The future mentorship and AI shadow-learning work are recorded in `docs/SCHOOL_ROADMAP.md`.
 

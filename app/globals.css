@@ -915,3 +915,21 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .studio-game-shell { height:calc(100svh - 145px); min-height:570px; }.studio-player-card { left:8px;top:8px;width:148px;padding:8px;grid-template-columns:36px 1fr; }.studio-avatar { width:36px;height:36px; }.studio-player-card footer { display:none; }.studio-top-actions { right:8px;top:8px; }.studio-help { top:65px;width:calc(100% - 100px);min-width:0; }.studio-help > svg { display:none; }.studio-game-nav button { padding-inline:4px;font-size:7px; }.studio-mobile-pad { left:10px;bottom:76px; }.arrange-toolbar { width:calc(100% - 14px);bottom:74px; }.studio-intro h1 { font-size:40px; }.quiz-reward-screen { margin-inline:-20px;padding-inline:15px; }.reward-score-card > strong { font-size:48px; }.reward-breakdown footer { grid-template-columns:auto 1fr; }.reward-breakdown footer strong { grid-column:2; }
 }
 @media (prefers-reduced-motion:reduce) { .reward-confetti { display:none; }.reward-score-card,.reward-sequence article,.reward-breakdown { transition:none; } }
+
+/* Physical studio movement and accurate shop previews */
+.studio-art-inspector { position:absolute; z-index:7; right:18px; bottom:82px; width:min(310px,calc(100% - 36px)); padding:16px 40px 16px 17px; border:1px solid rgba(201,168,76,.48); color:var(--ivory); background:rgba(8,11,17,.93); backdrop-filter:blur(14px); box-shadow:0 16px 45px rgba(0,0,0,.45); }
+.studio-art-inspector > button { position:absolute; right:10px; top:9px; width:25px; height:25px; border:1px solid var(--line); border-radius:50%; color:var(--muted); background:transparent; cursor:pointer; }
+.studio-art-inspector > span,.studio-art-inspector > strong,.studio-art-inspector > small { display:block; }.studio-art-inspector > span { color:var(--gold); font-size:8px; text-transform:uppercase; letter-spacing:.08em; }.studio-art-inspector > strong { margin:6px 0; font:500 17px var(--font-serif); }.studio-art-inspector > small { color:var(--muted); font-size:8px; }.studio-art-inspector p { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--line); color:#ccc4b7; font-size:9px; line-height:1.55; }
+.shop-object-preview { position:relative; height:128px; margin:-2px -2px 17px; overflow:hidden; border:1px solid rgba(201,168,76,.2); background:#080c13; }
+.shop-object-preview svg { display:block; width:100%; height:100%; filter:drop-shadow(0 8px 11px rgba(0,0,0,.35)); transition:transform .35s ease; }.shop-item:hover .shop-object-preview svg { transform:scale(1.045); }.shop-object-preview > small { position:absolute; right:7px; bottom:6px; padding:3px 5px; color:#d7c89e; background:rgba(5,8,13,.78); font-size:6px; text-transform:uppercase; letter-spacing:.08em; }
+
+@media (max-width:900px) {
+  .studio-mobile-pad { left:12px; bottom:79px; width:112px; height:112px; display:grid; grid-template-columns:repeat(3,34px); grid-template-rows:repeat(3,34px); place-content:center; gap:0; padding:5px; border-radius:50%; touch-action:none; user-select:none; }
+  .studio-mobile-pad button { width:34px; height:34px; padding:0; border:0; color:#eee3ca; background:transparent; touch-action:none; }
+  .studio-mobile-pad button:active { color:#171006; background:var(--gold); }
+  .studio-mobile-pad .pad-up { grid-column:2;grid-row:1; }.studio-mobile-pad .pad-left { grid-column:1;grid-row:2; }.studio-mobile-pad .pad-center { grid-column:2;grid-row:2;border:1px solid rgba(201,168,76,.45); }.studio-mobile-pad .pad-right { grid-column:3;grid-row:2; }.studio-mobile-pad .pad-down { grid-column:2;grid-row:3; }
+  .studio-art-inspector { right:10px; bottom:82px; width:min(270px,calc(100% - 140px)); }
+}
+@media (max-width:520px) {
+  .studio-mobile-pad { left:8px;bottom:74px;transform:scale(.88);transform-origin:left bottom; }.studio-art-inspector { right:7px;bottom:78px;width:calc(100% - 122px);padding:12px 32px 12px 12px; }.studio-art-inspector > strong { font-size:14px; }.shop-object-preview { height:145px; }
+}
