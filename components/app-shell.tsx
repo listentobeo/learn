@@ -6,6 +6,7 @@ import { Logo } from "./logo";
 import { initials } from "@/lib/utils";
 import { SideNav } from "./side-nav";
 import { SignOutButton } from "./sign-out-button";
+import { ThemeToggle } from "./theme-toggle";
 
 const sidebarStorageKey = "beo-sidebar-collapsed";
 const sidebarChangeEvent = "beo-sidebar-change";
@@ -45,6 +46,9 @@ export function AppShell({ children, name = "Amara Okafor", track = "Drawing", a
           {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
         </button>
         <SideNav admin={admin} />
+        <div className="appearance-control">
+          <ThemeToggle />
+        </div>
         <div className="student-card">
           <span className="student-avatar">{initials(name)}</span>
           <div className="student-details"><strong>{name}</strong><span>{admin ? "Administrator" : `${track} student`}</span></div>
@@ -52,7 +56,10 @@ export function AppShell({ children, name = "Amara Okafor", track = "Drawing", a
         </div>
       </aside>
       <main className="main">
-        <div className="mobile-top"><Logo href={null} /><SignOutButton admin={admin} /></div>
+        <div className="mobile-top">
+          <Logo href={null} />
+          <div className="mobile-top-actions"><ThemeToggle compact /><SignOutButton admin={admin} /></div>
+        </div>
         {children}
       </main>
       <SideNav admin={admin} mobile />

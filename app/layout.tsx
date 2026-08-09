@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
-import { Toaster } from "sonner";
 import { SiteFooter } from "@/components/site-footer";
+import { ThemedToaster } from "@/components/theme-toggle";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -21,6 +21,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <head>
+        <Script id="theme-preference" strategy="beforeInteractive">
+          {`try {
+            var theme = window.localStorage.getItem("beo-color-theme");
+            document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+            document.documentElement.style.colorScheme = document.documentElement.dataset.theme;
+          } catch (error) {
+            document.documentElement.dataset.theme = "dark";
+          }`}
+        </Script>
         <Script id="microsoft-clarity" strategy="beforeInteractive">
           {`(function(c,l,a,r,i,t,y){
             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -32,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${inter.variable} ${playfair.variable}`}>
         {children}
         <SiteFooter />
-        <Toaster theme="dark" position="top-center" />
+        <ThemedToaster />
       </body>
     </html>
   );
