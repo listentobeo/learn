@@ -205,6 +205,18 @@ button, a { -webkit-tap-highlight-color: transparent; }
 [data-theme="light"] .app-layout + .site-footer { background: #c4c7c3; color: #5e6670; }
 [data-theme="light"] .app-layout + .site-footer span { color: #424a54; }
 
+/* Prevent dark-mode text literals from becoming low-contrast in day mode. */
+[data-theme="light"] .app-layout :where(h1, h2, h3, h4, h5, h6, p, span, label, strong, small, a, button, input, select, option, textarea, th, td, li, code, blockquote, legend):not(:where(.personal-studio *, .immersive-studio *, .studio-game-shell *, .welcome-video *, .video *)) {
+  color: var(--ivory) !important;
+}
+[data-theme="light"] .app-layout :where(input, textarea)::placeholder {
+  color: #5f6771;
+  opacity: 1;
+}
+[data-theme="light"] .app-layout :where(.eyebrow, .gold-link, .resource-card a, .track-number, .lesson-code):not(:where(.personal-studio *, .immersive-studio *, .studio-game-shell *)) {
+  color: var(--gold-light) !important;
+}
+
 /* Studio canvases remain dark so artwork, controls, and spatial lighting retain contrast. */
 [data-theme="light"] .personal-studio,
 [data-theme="light"] .immersive-studio,
