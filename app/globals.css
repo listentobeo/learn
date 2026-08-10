@@ -216,6 +216,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 [data-theme="light"] .app-layout :where(.eyebrow, .gold-link, .resource-card a, .track-number, .lesson-code):not(:where(.personal-studio *, .immersive-studio *, .studio-game-shell *)) {
   color: var(--gold-light) !important;
 }
+[data-theme="light"] .app-layout :is(.button:not(.ghost), .student-avatar, .reward-trophy, .studio-avatar, .studio-joystick-knob, .studio-game-nav button.active, .arrange-save, .studio-top-actions button:hover, .studio-view-arrow:hover, .studio-mobile-pad button:active, .studio-landscape-prompt button),
+[data-theme="light"] .app-layout :is(.button:not(.ghost), .student-avatar, .reward-trophy, .studio-avatar, .studio-joystick-knob, .studio-game-nav button.active, .arrange-save, .studio-top-actions button:hover, .studio-view-arrow:hover, .studio-mobile-pad button:active, .studio-landscape-prompt button) :where(span, strong, small, svg) {
+  color: #fff !important;
+}
 
 /* Studio canvases remain dark so artwork, controls, and spatial lighting retain contrast. */
 [data-theme="light"] .personal-studio,
